@@ -1,11 +1,10 @@
 "use client";
 
-import { Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useActionState, useMemo, useState } from "react";
 import { correctAttendance } from "@/app/actions/attendance";
 import { monthLabel } from "@/lib/time";
-import { announcements as seedAnn, departments as sampleDepartments, formatDate, type Announcement } from "@/lib/sample-data";
+import { formatDate } from "@/lib/sample-data";
 import { TrendLine, Bars } from "./charts";
 import { Modal, useToast, keepOnSubmit } from "./client-ui";
 import type { ActionResult, BoardRow, DepartmentSummary } from "@/lib/types";
@@ -189,75 +188,5 @@ export function DepartmentsOverview({ departments }: { departments: DepartmentSu
         <Bars data={departments.filter((d) => d.attendanceRate !== null).map((d) => ({ dept: d.name, rate: d.attendanceRate as number }))} x="dept" y="rate" horizontal format="pct" />
       </Card>
     </div>
-  );
-}
-
-export function AnnouncementsManager({ author }: { author: string }) {
-  const [list, setList] = useState<Announcement[]>(seedAnn);
-  const [open, setOpen] = useState(false);
-  const { show, toast } = useToast();
-  return (
-    <>
-      <div className="mb-4 flex justify-end">
-        <button className={buttonClass("primary")} onClick={() => setOpen(true)}>
-          <Plus className="size-4" /> New announcement
-        </button>
-      </div>
-      <Card pad={false}>
-        <DataTable
-          rows={list}
-          rowKey={(a) => a.id}
-          columns={[
-            { key: "t", header: "Title", cell: (a) => <span><span className="block font-medium text-navy-900">{a.title}</span><span className="line-clamp-1 text-xs text-ink-faint">{a.body}</span></span> },
-            { key: "ty", header: "Type", cell: (a) => <Badge tone={a.type === "Important" ? "bad" : a.type === "Holiday" ? "good" : "blue"}>{a.type}</Badge> },
-            { key: "au", header: "Audience", cell: (a) => a.audience },
-            { key: "by", header: "Posted by", cell: (a) => a.author },
-            { key: "d", header: "Date", cell: (a) => a.date, className: "whitespace-nowrap tabular-nums" },
-          ]}
-        />
-      </Card>
-      <Modal open={open} onClose={() => setOpen(false)} title="New announcement">
-        <form
-          action={(f) => {
-            const a: Announcement = { id: `AN-${89 + list.length - 5}`, title: String(f.get("title")), body: String(f.get("body")), type: f.get("type") as Announcement["type"], audience: String(f.get("audience")), author, date: "2026-11-02" };
-            setList((l) => [a, ...l]);
-            setOpen(false);
-            show(`Announcement sent to ${a.audience.toLowerCase()}`);
-          }}
-          className="space-y-4"
-        >
-          <Field label="Title">
-            <input name="title" required className={inputClass} />
-          </Field>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Field label="Type">
-              <select name="type" className={inputClass}>
-                <option>HR</option>
-                <option>Company news</option>
-                <option>Holiday</option>
-                <option>Reminder</option>
-                <option>Important</option>
-              </select>
-            </Field>
-            <Field label="Audience">
-              <select name="audience" className={inputClass}>
-                <option>All staff</option>
-                {sampleDepartments.map((d) => (
-                  <option key={d.id}>{d.name}</option>
-                ))}
-              </select>
-            </Field>
-          </div>
-          <Field label="Message">
-            <textarea name="body" required rows={5} className={inputClass} />
-          </Field>
-          <div className="flex justify-end gap-2">
-            <button type="button" className={buttonClass("outline")} onClick={() => setOpen(false)}>Cancel</button>
-            <button type="submit" className={buttonClass("primary")}>Publish</button>
-          </div>
-        </form>
-      </Modal>
-      {toast}
-    </>
   );
 }
