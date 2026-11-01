@@ -350,7 +350,10 @@ model Announcement {
   type        AnnouncementType
   audience    String // "All staff" or a department name
   authorName  String
+  authorId    String? // employee who posted it; lets the author remove it
   publishedAt DateTime         @default(now())
+
+  @@index([publishedAt])
 }
 
 model Notification {
@@ -374,7 +377,11 @@ model HelpdeskRequest {
   message    String
   status     HelpdeskStatus @default(OPEN)
   reply      String?
+  repliedBy  String? // name of the HR person who last replied
   createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @default(now()) @updatedAt
+
+  @@index([employeeId])
 }
 
 model Ticket {

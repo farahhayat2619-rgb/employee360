@@ -1,12 +1,15 @@
 import clsx from "clsx";
 import { CheckCircle2, Forward, PenLine, Send } from "lucide-react";
-import type { Ticket } from "@/lib/sample-data";
 import { formatDate } from "@/lib/sample-data";
-import { KeyValue, StatusBadge } from "./ui";
+import type { AnnouncementTypeLabel, TicketView } from "@/lib/types";
+import { KeyValue, StatusBadge, type Tone } from "./ui";
+
+/** Badge colour for an announcement type (shared by server and client components). */
+export const annTone = (t: AnnouncementTypeLabel): Tone => (t === "Important" ? "bad" : t === "Holiday" ? "good" : t === "HR" ? "navy" : "blue");
 
 const icons = { Submitted: Send, Forwarded: Forward, Updated: PenLine, Closed: CheckCircle2 } as const;
 
-export function TicketDetails({ t }: { t: Ticket }) {
+export function TicketDetails({ t }: { t: TicketView }) {
   return (
     <div className="space-y-5">
       <div>
@@ -49,9 +52,4 @@ export function TicketDetails({ t }: { t: Ticket }) {
       </div>
     </div>
   );
-}
-
-export function nowStamp() {
-  const d = new Date();
-  return `${d.toISOString().slice(0, 10)} ${d.toTimeString().slice(0, 5)}`;
 }

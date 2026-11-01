@@ -7,20 +7,28 @@ import { myCalendar, myLast30Days, myPunchCard } from "@/lib/attendance";
 import { requirePortal } from "@/lib/auth";
 import { balancesFor, upcomingHolidays } from "@/lib/leave";
 import { myTasks } from "@/lib/records";
-import { announcements, formatDate, ticketCounts, tickets } from "@/lib/sample-data";
+import { annTone } from "@/components/ticket-parts";
+import { myAnnouncements, ticketCounts } from "@/lib/comms";
+import { formatDate } from "@/lib/sample-data";
 import { localDate, localTime, monthLabel } from "@/lib/time";
 
 export default async function EmployeeDashboard() {
   const me = await requirePortal("employee");
   const now = new Date();
-  const [{ today, office }, last30, calendar, balances, holidays, { tasks }] = await Promise.all([myPunchCard(), myLast30Days(), myCalendar(), balancesFor(me.employeeId, Number(localDate(now).slice(0, 4))), upcomingHolidays(), myTasks()]);
+  const [{ today, office }, last30, calendar, balances, holidays, { tasks }, myTickets, announcements] = await Promise.all([
+    myPunchCard(),
+    myLast30Days(),
+    myCalendar(),
+    balancesFor(me.employeeId, Number(localDate(now).slice(0, 4))),
+    upcomingHolidays(),
+    myTasks(),
+    ticketCounts({ submittedById: me.employeeId }),
+    myAnnouncements(3),
+  ]);
   const balance = balances.reduce((s, l) => s + l.allowed - l.used, 0);
   const hour = Number(localTime(now).slice(0, 2));
   const greeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
   const openTasks = tasks.filter((t) => t.status !== "Completed");
-  // Tickets move to the database in Phase 5; until then the tile shows the sample employee's tickets
-  const sampleId = "EMP-1024";
-  const myTickets = ticketCounts(tickets.filter((t) => t.employeeId === sampleId));
   const firstName = me.name.split(" ")[0];
 
   return (
@@ -105,12 +113,13 @@ export default async function EmployeeDashboard() {
       </div>
 
       <div className="mt-6 grid gap-6 lg:grid-cols-3">
-        <Card title={<span className="flex items-center gap-2"><Megaphone className="size-4 text-accent-600" /> Latest announcements</span>} className="lg:col-span-2" pad={false}>
+        <Card title={<span className="flex items-center gap-2"><Megaphone className="size-4 text-accent-600" /> Latest announcements</span>} action={<Link href="/employee/notifications?tab=announcements" className="text-xs font-medium text-accent-700 hover:underline">View all</Link>} className="lg:col-span-2" pad={false}>
           <ul className="divide-y divide-line">
-            {announcements.slice(0, 3).map((a) => (
+            {announcements.length === 0 && <li className="px-5 py-6 text-center text-sm text-ink-faint">No announcements yet.</li>}
+            {announcements.map((a) => (
               <li key={a.id} className="px-5 py-3.5">
                 <div className="flex items-center gap-2">
-                  <Badge tone={a.type === "Important" ? "bad" : a.type === "Holiday" ? "good" : "blue"}>{a.type}</Badge>
+                  <Badge tone={annTone(a.type)}>{a.type}</Badge>
                   <span className="text-xs text-ink-faint">{formatDate(a.date)}</span>
                 </div>
                 <p className="mt-1.5 text-sm font-medium text-navy-900">{a.title}</p>

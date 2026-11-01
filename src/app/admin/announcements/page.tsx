@@ -1,11 +1,7 @@
-import { AnnouncementsManager } from "@/components/monitoring";
-import { PageHeader } from "@/components/ui";
+import { AnnouncementsManager } from "@/components/comms-views";
+import { announcementsAdmin } from "@/lib/comms";
 
-export default function Page() {
-  return (
-    <>
-      <PageHeader title="Announcements" subtitle="Company-wide news, holidays and reminders. Each one also appears in employees' notifications." />
-      <AnnouncementsManager author="Sana Malik" />
-    </>
-  );
+export default async function Page() {
+  const data = await announcementsAdmin("admin");
+  return <AnnouncementsManager {...data} title="Announcements" subtitle="Company-wide news, holidays and reminders. Everyone in the audience also gets a notification." />;
 }

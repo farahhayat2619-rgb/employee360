@@ -160,3 +160,41 @@ export type TaskView = {
   priority: "High" | "Medium" | "Low";
   note: string | null;
 };
+
+/* ---------- Phase 5: tickets, helpdesk, announcements, notifications ---------- */
+export type TicketStatusLabel = "Open" | "Pending" | "Closed";
+export type TicketHistoryItem = { at: string; by: string; action: string; note: string }; // at = "YYYY-MM-DD HH:MM" Karachi time
+export type TicketView = {
+  id: string;
+  subject: string;
+  description: string;
+  submittedBy: string;
+  employeeId: string;
+  department: string;
+  submitted: string; // YYYY-MM-DD
+  forwardedTo: string | null;
+  status: TicketStatusLabel;
+  latestUpdate: string;
+  resolution: string | null;
+  history: TicketHistoryItem[];
+};
+export type TicketCounts = { open: number; pending: number; closed: number };
+
+export type HelpdeskStatusLabel = "Open" | "In progress" | "Resolved";
+export type HelpdeskView = {
+  id: string;
+  employeeId: string;
+  from: string;
+  department: string;
+  subject: string;
+  message: string;
+  status: HelpdeskStatusLabel;
+  reply: string | null;
+  repliedBy: string | null;
+  created: string; // YYYY-MM-DD
+};
+
+export type AnnouncementTypeLabel = "HR" | "Company news" | "Holiday" | "Reminder" | "Important";
+export type AnnouncementView = { id: string; title: string; body: string; type: AnnouncementTypeLabel; audience: string; author: string; date: string; canRemove: boolean };
+
+export type NotificationView = { id: string; type: string; message: string; link: string | null; read: boolean; at: string };

@@ -5,7 +5,7 @@ Employee360 is an employee management and HRMS web app for a corporate or bankin
 
 ## Status
 
-**Phase 4 of 6: profiles, payroll, goals, policies and tasks.** Sign-in is real, every portal page is protected by role, and employees, departments, roles, attendance, leave, profiles, payroll, goals, reviews, policies and tasks are saved to PostgreSQL. Tickets, the HR helpdesk, announcements, notifications and reports still show sample data until Phases 5 and 6; a banner on every page says so.
+**Phase 5 of 6: tickets, helpdesk, announcements and notifications.** Sign-in is real, every portal page is protected by role, and everything except Reports is saved to PostgreSQL, including the dashboards and office geofence settings. Reports still show sample figures until Phase 6; a banner on every page says so.
 
 | Phase | Scope | Status |
 | --- | --- | --- |
@@ -13,8 +13,8 @@ Employee360 is an employee management and HRMS web app for a corporate or bankin
 | 2 | Database, secure login, roles, protected pages, sample data | Done |
 | 3 | GPS Punch In / Out with office geofencing, leave | Done |
 | 4 | Profiles, payroll and PDF salary slips, goals, policies, tasks | Done |
-| 5 | Announcements, notifications, HR helpdesk, complaint tickets | Next |
-| 6 | Reports, polish, deploy | Planned |
+| 5 | Announcements, notifications, HR helpdesk, complaint tickets | Done |
+| 6 | Reports, polish, deploy | Next |
 
 ## Screens
 
@@ -45,6 +45,14 @@ Employee360 is an employee management and HRMS web app for a corporate or bankin
 - **Goals and reviews:** managers (for their department and direct reports) and HR assign monthly or annual goals and write reviews rated 1 to 5. Employees update their goal progress.
 - **Policies:** HR uploads PDFs (up to 5 MB, checked to be real PDFs) or new versions, and all staff are notified. Files are stored in the database, so no separate file storage is needed. Seeded policies are short sample documents.
 - **Tasks:** HR assigns tasks with a deadline and priority. Employees update progress with a note or mark them complete, and HR is notified.
+
+## Tickets, helpdesk, announcements and notifications
+
+- **Complaint tickets:** an employee submits a complaint and gets an ID like `TKT-2026-00048`. Every complaint goes to Management first. A manager reviews it and forwards it to the department that can fix it (status Open to Pending). Everyone in that department sees it in their **Department Inbox**, posts progress updates and closes it with a resolution (status Closed). Each step is kept in the ticket's history, and the person who raised it is notified at every step. Nobody can review or close their own complaint.
+- **HR helpdesk:** employees ask HR a question (IDs like `HR-0462`). HR replies, and can mark the request resolved. Both sides are notified.
+- **Announcements:** HR can post to all staff or any department; managers to all staff or their own department. Everyone in the audience gets a notification. HR, or the person who posted, can remove an announcement.
+- **Notifications:** the bell shows the real unread count. Opening a notification marks it read and takes you to the page it is about; "Mark all as read" clears the lot.
+- **Dashboards and settings:** all three dashboards now show live numbers. HR edits office locations, geofence radius and working hours under System Settings (with a "Use my current location" button), and the next punch-in uses the new values.
 
 ## Security
 

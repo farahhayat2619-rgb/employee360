@@ -235,10 +235,12 @@ async function main() {
 
   // Communication
   const annType = { HR: "HR", "Company news": "COMPANY_NEWS", Holiday: "HOLIDAY", Reminder: "REMINDER", Important: "IMPORTANT" } as const;
-  for (const a of S.announcements) await db.announcement.create({ data: { title: a.title, body: a.body, type: annType[a.type], audience: a.audience, authorName: a.author, publishedAt: day(a.date) } });
+  for (const a of S.announcements) await db.announcement.create({ data: { title: a.title, body: a.body, type: annType[a.type], audience: a.audience, authorName: a.author, authorId: byName.get(a.author) ?? null, publishedAt: day(a.date) } });
   for (const [k, nt] of S.notifications.entries()) await db.notification.create({ data: { employeeId: "EMP-1024", type: nt.type, message: nt.message, read: nt.read, createdAt: new Date(Date.UTC(2026, 10, 1, 9 - k)) } });
   const hdStatus = { Open: "OPEN", "In progress": "IN_PROGRESS", Resolved: "RESOLVED" } as const;
-  for (const h of S.helpdesk) await db.helpdeskRequest.create({ data: { id: h.id, employeeId: "EMP-1024", subject: h.subject, message: h.message, status: hdStatus[h.status], reply: h.reply, createdAt: day(h.created) } });
+  for (const h of S.helpdesk) await db.helpdeskRequest.create({ data: { id: h.id, employeeId: "EMP-1024", subject: h.subject, message: h.message, status: hdStatus[h.status], reply: h.reply, repliedBy: h.reply ? "Sana Malik" : null, createdAt: day(h.created) } });
+  // A few requests from other staff so the HR inbox has work waiting
+  for (const { created, ...h } of EXTRA_HELPDESK) await db.helpdeskRequest.create({ data: { ...h, createdAt: day(created) } });
 
   // Tickets with full history
   for (const t of S.tickets) {
@@ -354,3 +356,8 @@ const policyText: Record<string, { summary: string; sections: { heading: string;
     ],
   },
 };
+
+const EXTRA_HELPDESK = [
+  { id: "HR-0461", employeeId: "EMP-1067", subject: "Maternity leave policy", message: "How many weeks of maternity leave am I entitled to, and how do I apply?", status: "OPEN" as const, created: "2026-11-01" },
+  { id: "HR-0459", employeeId: "EMP-1073", subject: "Change bank account for salary", message: "I have moved my salary account to a new bank. Which form do I need to fill in?", status: "OPEN" as const, created: "2026-10-31" },
+];
