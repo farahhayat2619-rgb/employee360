@@ -2,9 +2,10 @@
 
 import { Plus } from "lucide-react";
 import { useMemo, useState } from "react";
-import { announcements as seedAnn, attendanceTrend, departments, employees, goals as seedGoals, type Announcement, type Goal } from "@/lib/sample-data";
+import { announcements as seedAnn, attendanceTrend, departments as sampleDepartments, employees, goals as seedGoals, type Announcement, type Goal } from "@/lib/sample-data";
 import { TrendLine, Bars } from "./charts";
 import { Modal, useToast } from "./client-ui";
+import type { DepartmentSummary } from "@/lib/types";
 import { Filters } from "./people";
 import { Avatar, Badge, buttonClass, Card, DataTable, Field, inputClass, Progress, StatusBadge } from "./ui";
 
@@ -60,14 +61,14 @@ export function AttendanceMonitor({ scopeDept }: { scopeDept?: string }) {
   );
 }
 
-export function DepartmentsOverview() {
+export function DepartmentsOverview({ departments }: { departments: DepartmentSummary[] }) {
   return (
     <div className="space-y-6">
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {departments.map((d) => (
           <Card key={d.id}>
             <p className="font-semibold text-navy-900">{d.name}</p>
-            <p className="text-xs text-ink-faint">Head: {d.head}</p>
+            <p className="text-xs text-ink-faint">Head: {d.head ?? "Not assigned"}</p>
             <dl className="mt-4 grid grid-cols-3 gap-2 text-center">
               <div className="rounded-lg bg-navy-50 py-2">
                 <dt className="text-[11px] text-ink-faint">Staff</dt>
@@ -75,7 +76,7 @@ export function DepartmentsOverview() {
               </div>
               <div className="rounded-lg bg-navy-50 py-2">
                 <dt className="text-[11px] text-ink-faint">Attendance</dt>
-                <dd className="text-lg font-semibold text-navy-900">{d.attendanceRate}%</dd>
+                <dd className="text-lg font-semibold text-navy-900">{d.attendanceRate === null ? "—" : `${d.attendanceRate}%`}</dd>
               </div>
               <div className="rounded-lg bg-navy-50 py-2">
                 <dt className="text-[11px] text-ink-faint">Open tickets</dt>
@@ -86,7 +87,7 @@ export function DepartmentsOverview() {
         ))}
       </div>
       <Card title="Attendance rate by department · October">
-        <Bars data={departments.map((d) => ({ dept: d.name, rate: d.attendanceRate }))} x="dept" y="rate" horizontal format="pct" />
+        <Bars data={departments.filter((d) => d.attendanceRate !== null).map((d) => ({ dept: d.name, rate: d.attendanceRate as number }))} x="dept" y="rate" horizontal format="pct" />
       </Card>
     </div>
   );
@@ -227,7 +228,7 @@ export function AnnouncementsManager({ author }: { author: string }) {
             <Field label="Audience">
               <select name="audience" className={inputClass}>
                 <option>All staff</option>
-                {departments.map((d) => (
+                {sampleDepartments.map((d) => (
                   <option key={d.id}>{d.name}</option>
                 ))}
               </select>

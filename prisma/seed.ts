@@ -1,0 +1,247 @@
+// Seeds the database with Crescent Bank sample data (fictional).
+// Run: npx prisma db seed   (wipes existing rows first)
+// Every seeded attendance row has gpsVerified = false so demo data is never shown as GPS-verified.
+import "dotenv/config";
+import bcrypt from "bcryptjs";
+import { PrismaPg } from "@prisma/adapter-pg";
+import { PrismaClient, type Role } from "../src/generated/prisma/client";
+import * as S from "../src/lib/sample-data";
+
+const db = new PrismaClient({ adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL! }) });
+
+export const DEMO_PASSWORD = "Employee360!";
+const day = (iso: string) => new Date(`${iso}T00:00:00Z`);
+const at = (iso: string, hhmm: string) => new Date(`${iso}T${hhmm}:00+05:00`); // Asia/Karachi
+
+const firstNames = ["Adeel", "Amna", "Arslan", "Asma", "Bushra", "Faisal", "Farhan", "Ghazala", "Haris", "Huma", "Junaid", "Kashif", "Laiba", "Mahnoor", "Moiz", "Naveed", "Noor", "Qasim", "Saad", "Sadia", "Salman", "Samina", "Shahzaib", "Shazia", "Tahir", "Taimur", "Uzma", "Waqar", "Yasir", "Zara", "Zeeshan", "Aliya", "Fahad", "Hina", "Irfan", "Javeria", "Kamal", "Mehwish", "Nabeel", "Rida", "Saima", "Talha", "Umair", "Wajiha"];
+const lastNames = ["Ahmed", "Ali", "Aslam", "Baig", "Butt", "Chaudhry", "Hussain", "Iqbal", "Jamil", "Khan", "Malik", "Mirza", "Nawaz", "Qureshi", "Rehman", "Saeed", "Shah", "Sheikh", "Siddiqui", "Zafar"];
+const designations: Record<string, string[]> = {
+  Operations: ["Operations Officer", "Operations Associate", "Branch Coordinator"],
+  "Human Resources": ["HR Officer", "Recruitment Associate"],
+  "Information Technology": ["Software Engineer", "Support Analyst", "Network Engineer"],
+  Finance: ["Accountant", "Financial Analyst"],
+  "Retail Banking": ["Relationship Manager", "Customer Service Officer", "Teller"],
+  "Risk & Compliance": ["Compliance Analyst", "Risk Analyst"],
+};
+
+const roleMap: Record<S.Role, Role> = { employee: "EMPLOYEE", management: "MANAGEMENT", admin: "ADMIN" };
+
+async function wipe() {
+  // Order matters because of foreign keys
+  await db.$transaction([
+    db.ticketUpdate.deleteMany(),
+    db.ticket.deleteMany(),
+    db.notification.deleteMany(),
+    db.helpdeskRequest.deleteMany(),
+    db.task.deleteMany(),
+    db.review.deleteMany(),
+    db.goal.deleteMany(),
+    db.payslip.deleteMany(),
+    db.salaryStructure.deleteMany(),
+    db.leaveRequest.deleteMany(),
+    db.leaveBalance.deleteMany(),
+    db.leaveType.deleteMany(),
+    db.attendance.deleteMany(),
+    db.holiday.deleteMany(),
+    db.announcement.deleteMany(),
+    db.policy.deleteMany(),
+    db.auditLog.deleteMany(),
+    db.loginAttempt.deleteMany(),
+    db.session.deleteMany(),
+    db.department.updateMany({ data: { headId: null } }),
+  ]);
+  await db.employee.updateMany({ data: { managerId: null } });
+  await db.employee.deleteMany();
+  await db.user.deleteMany();
+  await db.department.deleteMany();
+  await db.office.deleteMany();
+}
+
+async function main() {
+  await wipe();
+  const hash = await bcrypt.hash(DEMO_PASSWORD, 12);
+
+  const offices = await Promise.all(
+    S.offices.map((o) => db.office.create({ data: { name: o.name, address: o.address, latitude: o.lat, longitude: o.lng, radiusM: o.radius, workStart: o.start, workEnd: o.end, graceMin: o.grace } })),
+  );
+  const officeId = (name: string) => offices.find((o) => o.name === name)!.id;
+
+  const depts = await Promise.all(S.departments.map((d) => db.department.create({ data: { name: d.name } })));
+  const deptId = (name: string) => depts.find((d) => d.name === name)!.id;
+
+  // Named employees from the design phase, plus generated staff to reach 60
+  type Seed = Omit<S.Employee, "todayStatus" | "performance" | "manager"> & { managerName: string };
+  const people: Seed[] = S.employees.map((e) => ({ ...e, managerName: e.manager }));
+  let n = 1100;
+  let i = 0;
+  const deptCycle = S.departments.flatMap((d) => Array(Math.max(0, d.headcount - S.employees.filter((e) => e.department === d.name).length)).fill(d));
+  for (const d of deptCycle) {
+    const first = firstNames[i % firstNames.length];
+    const last = lastNames[(i * 7) % lastNames.length];
+    const titles = designations[d.name];
+    people.push({
+      id: `EMP-${n}`,
+      name: `${first} ${last}`,
+      email: `${first}.${last}${n}`.toLowerCase() + "@crescentbank.example",
+      phone: `+92 300 555 ${String(n).slice(-4)}`,
+      department: d.name,
+      designation: titles[i % titles.length],
+      joiningDate: `${2018 + (i % 8)}-${String((i % 12) + 1).padStart(2, "0")}-${String((i % 27) + 1).padStart(2, "0")}`,
+      managerName: d.head,
+      office: d.name === "Retail Banking" ? "Gulberg Branch, Lahore" : "Head Office, Karachi",
+      status: i % 19 === 7 ? "Inactive" : "Active",
+      role: "employee",
+      type: i % 5 === 0 ? "Contract" : "Permanent",
+    });
+    n++;
+    i++;
+  }
+
+  for (const p of people) {
+    await db.user.create({
+      data: {
+        email: p.email,
+        passwordHash: hash,
+        role: roleMap[p.role],
+        active: p.status !== "Inactive",
+        employee: {
+          create: {
+            id: p.id,
+            name: p.name,
+            phone: p.phone,
+            designation: p.designation,
+            joiningDate: day(p.joiningDate),
+            type: p.type === "Contract" ? "CONTRACT" : "PERMANENT",
+            status: p.status === "Inactive" ? "INACTIVE" : p.status === "On leave" ? "ON_LEAVE" : "ACTIVE",
+            departmentId: deptId(p.department),
+            officeId: officeId(p.office),
+            address: p.id === "EMP-1024" ? "House 14, Block 5, Clifton, Karachi" : null,
+            emergencyContact: p.id === "EMP-1024" ? "Faisal Khan (brother) · +92 321 555 0199" : null,
+          },
+        },
+      },
+    });
+  }
+  // Managers and department heads, now that every employee exists
+  const byName = new Map(people.map((p) => [p.name, p.id]));
+  for (const p of people) {
+    const managerId = byName.get(p.managerName);
+    if (managerId && managerId !== p.id) await db.employee.update({ where: { id: p.id }, data: { managerId } });
+  }
+  for (const d of S.departments) await db.department.update({ where: { name: d.name }, data: { headId: byName.get(d.head) } });
+
+  // Leave
+  const types = await Promise.all(S.leaveTypes.map((t) => db.leaveType.create({ data: { name: t.type, daysPerYear: t.allowed } })));
+  const typeId = (name: string) => types.find((t) => t.name === name)!.id;
+  for (const [idx, p] of people.entries()) {
+    for (const t of S.leaveTypes) {
+      const used = p.id === "EMP-1024" ? t.used : (idx + t.allowed) % (t.allowed - 1);
+      await db.leaveBalance.create({ data: { employeeId: p.id, leaveTypeId: typeId(t.type), year: 2026, allowed: t.allowed, used } });
+    }
+  }
+  for (const r of S.leaveRequests) {
+    const statusMap = { Pending: "PENDING", Approved: "APPROVED", Rejected: "REJECTED", "Cancel requested": "CANCEL_REQUESTED", Cancelled: "CANCELLED" } as const;
+    await db.leaveRequest.create({
+      data: { id: r.id, employeeId: r.employeeId, leaveTypeId: typeId(r.type), fromDate: day(r.from), toDate: day(r.to), days: r.days, reason: r.reason, status: statusMap[r.status], approverId: byName.get(r.approver), comment: r.comment, createdAt: day(r.applied) },
+    });
+  }
+  for (const h of S.holidays) await db.holiday.create({ data: { date: day(h.date), name: h.name } });
+
+  // October 2026 attendance (demo, never GPS-verified)
+  const rows = [];
+  for (const [idx, p] of people.entries()) {
+    if (p.status === "Inactive") continue;
+    const office = S.offices.find((o) => o.name === p.office)!;
+    for (let d = 1; d <= 31; d++) {
+      const iso = `2026-10-${String(d).padStart(2, "0")}`;
+      const dow = new Date(`${iso}T12:00:00Z`).getUTCDay();
+      if (dow === 0 || dow === 6) continue;
+      if (p.id === "EMP-1024") {
+        const mine = S.myAttendance.find((a) => a.date === iso)!;
+        if (mine.status === "On leave") {
+          rows.push({ employeeId: p.id, date: day(iso), status: "ON_LEAVE" as const });
+          continue;
+        }
+        const mins = Math.round(mine.hours * 60);
+        rows.push({ employeeId: p.id, date: day(iso), punchInAt: at(iso, mine.in!), punchOutAt: at(iso, mine.out!), punchInDistM: 38, punchOutDistM: 41, officeName: office.name, minutesWorked: mins, status: mine.status === "Late" ? ("LATE" as const) : ("PRESENT" as const), late: mine.status === "Late", earlyLeave: mine.early });
+        continue;
+      }
+      const seed = (idx * 31 + d * 7) % 100;
+      if (seed < 3) {
+        rows.push({ employeeId: p.id, date: day(iso), status: "ABSENT" as const });
+        continue;
+      }
+      if (seed < 7) {
+        rows.push({ employeeId: p.id, date: day(iso), status: "ON_LEAVE" as const });
+        continue;
+      }
+      const late = seed < 15;
+      const early = seed > 95;
+      const inT = late ? `09:${String(16 + (seed % 30)).padStart(2, "0")}` : `08:${String(40 + (seed % 19)).padStart(2, "0")}`;
+      const outT = early ? "16:20" : `17:${String(5 + (seed % 40)).padStart(2, "0")}`;
+      const mins = (Number(outT.slice(0, 2)) * 60 + Number(outT.slice(3))) - (Number(inT.slice(0, 2)) * 60 + Number(inT.slice(3)));
+      rows.push({ employeeId: p.id, date: day(iso), punchInAt: at(iso, inT), punchOutAt: at(iso, outT), punchInDistM: 20 + (seed % 70), punchOutDistM: 15 + (seed % 75), officeName: office.name, minutesWorked: mins, status: late ? ("LATE" as const) : ("PRESENT" as const), late, earlyLeave: early });
+    }
+  }
+  await db.attendance.createMany({ data: rows.map((r) => ({ ...r, gpsVerified: false })) });
+
+  // Pay: structures for everyone, six months of published slips
+  const months = ["2026-05-01", "2026-06-01", "2026-07-01", "2026-08-01", "2026-09-01", "2026-10-01"];
+  for (const [idx, p] of people.entries()) {
+    const basic = p.id === "EMP-1024" ? 185_000 : p.role === "management" ? 320_000 : p.role === "admin" ? 210_000 : 120_000 + (idx % 6) * 12_500;
+    const s = { basic, house: Math.round(basic * 0.4), transport: 15_000, medical: Math.round(basic * 0.1) };
+    await db.salaryStructure.create({ data: { employeeId: p.id, ...s } });
+    if (p.status === "Inactive") continue;
+    for (const m of months) {
+      const named = p.id === "EMP-1024" ? S.payslips.find((x) => new Date(`${m}T00:00:00Z`).toLocaleString("en-GB", { month: "long", year: "numeric", timeZone: "UTC" }) === x.month) : undefined;
+      const slip = named
+        ? { basic: named.basic, house: named.house, transport: named.transport, medical: named.medical, tax: named.tax, providentFund: named.providentFund, other: named.other }
+        : { ...s, tax: Math.round((s.basic + s.house + s.transport + s.medical) * 0.085), providentFund: Math.round(s.basic * 0.0833), other: 0 };
+      const net = slip.basic + slip.house + slip.transport + slip.medical - slip.tax - slip.providentFund - slip.other;
+      await db.payslip.create({ data: { employeeId: p.id, month: day(m), ...slip, net, published: true } });
+    }
+  }
+
+  // Goals, reviews, policies, tasks
+  for (const g of S.goals) await db.goal.create({ data: { employeeId: g.employeeId, period: g.period === "Monthly" ? "MONTHLY" : "ANNUAL", title: g.title, kpi: g.kpi, target: g.target, progress: g.progress, due: day(g.due) } });
+  for (const r of S.reviews) await db.review.create({ data: { employeeId: "EMP-1024", reviewerId: "EMP-1002", period: r.period, rating: r.rating, feedback: r.feedback } });
+  for (const p of S.policies) await db.policy.create({ data: { title: p.title, category: p.category, version: p.version, pages: p.pages, updatedAt: day(p.updated) } });
+  const taskStatus = { "To do": "TODO", "In progress": "IN_PROGRESS", Completed: "COMPLETED" } as const;
+  for (const t of S.tasks) await db.task.create({ data: { id: t.id, title: t.title, description: t.description, assigneeId: t.assignee, assignedById: byName.get(t.assignedBy)!, deadline: day(t.deadline), status: taskStatus[t.status], progress: t.progress, priority: t.priority.toUpperCase() as "HIGH" | "MEDIUM" | "LOW" } });
+
+  // Communication
+  const annType = { HR: "HR", "Company news": "COMPANY_NEWS", Holiday: "HOLIDAY", Reminder: "REMINDER", Important: "IMPORTANT" } as const;
+  for (const a of S.announcements) await db.announcement.create({ data: { title: a.title, body: a.body, type: annType[a.type], audience: a.audience, authorName: a.author, publishedAt: day(a.date) } });
+  for (const [k, nt] of S.notifications.entries()) await db.notification.create({ data: { employeeId: "EMP-1024", type: nt.type, message: nt.message, read: nt.read, createdAt: new Date(Date.UTC(2026, 10, 1, 9 - k)) } });
+  const hdStatus = { Open: "OPEN", "In progress": "IN_PROGRESS", Resolved: "RESOLVED" } as const;
+  for (const h of S.helpdesk) await db.helpdeskRequest.create({ data: { id: h.id, employeeId: "EMP-1024", subject: h.subject, message: h.message, status: hdStatus[h.status], reply: h.reply, createdAt: day(h.created) } });
+
+  // Tickets with full history
+  for (const t of S.tickets) {
+    await db.ticket.create({
+      data: {
+        id: t.id,
+        subject: t.subject,
+        description: t.description,
+        submittedById: t.employeeId,
+        department: t.department,
+        forwardedTo: t.forwardedTo,
+        status: t.status.toUpperCase() as "OPEN" | "PENDING" | "CLOSED",
+        latestUpdate: t.latestUpdate,
+        resolution: t.resolution,
+        createdAt: day(t.submitted),
+        updates: { create: t.history.map((h) => ({ byId: byName.get(h.by)!, action: h.action, note: h.note, at: new Date(`${h.at.replace(" ", "T")}:00+05:00`) })) },
+      },
+    });
+  }
+
+  const count = await db.employee.count();
+  console.log(`Seeded ${count} employees across ${depts.length} departments. Demo password for every account: ${DEMO_PASSWORD}`);
+}
+
+main()
+  .catch((e) => {
+    console.error(e);
+    process.exit(1);
+  })
+  .finally(() => db.$disconnect());
