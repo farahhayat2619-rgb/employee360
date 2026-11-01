@@ -5,6 +5,7 @@ import { randomInt } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import type { Role as DbRole } from "@/generated/prisma/client";
+import { audit } from "@/lib/audit";
 import { authorize } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { nextEmployeeId } from "@/lib/queries";
@@ -37,9 +38,6 @@ function tempPassword() {
   return Array.from({ length: 12 }, () => chars[randomInt(chars.length)]).join("");
 }
 
-async function audit(actorEmail: string, action: string, entity: string, entityId: string, before?: unknown, after?: unknown) {
-  await db.auditLog.create({ data: { actorEmail, action, entity, entityId, before: before === undefined ? undefined : JSON.parse(JSON.stringify(before)), after: after === undefined ? undefined : JSON.parse(JSON.stringify(after)) } });
-}
 
 export async function saveEmployee(_prev: ActionResult, form: FormData): Promise<ActionResult> {
   const me = await authorize("admin");

@@ -1,36 +1,42 @@
 import { CalendarDays, CheckCircle2, Clock, Hourglass, Megaphone, PartyPopper, Ticket } from "lucide-react";
 import Link from "next/link";
-import { MiniCalendar } from "@/components/mini-calendar";
+import { CalendarLegend, MiniCalendar } from "@/components/mini-calendar";
 import { PunchCard } from "@/components/punch-card";
 import { Badge, Card, PageHeader, StatCard, StatusBadge } from "@/components/ui";
-import { announcements, currentUsers, employeeById, formatDate, holidays, leaveTypes, myAttendance, ticketCounts, tickets, tasks } from "@/lib/sample-data";
+import { myCalendar, myLast30Days, myPunchCard } from "@/lib/attendance";
+import { requirePortal } from "@/lib/auth";
+import { balancesFor, upcomingHolidays } from "@/lib/leave";
+import { announcements, formatDate, ticketCounts, tickets, tasks } from "@/lib/sample-data";
+import { localDate, localTime, monthLabel } from "@/lib/time";
 
-export default function EmployeeDashboard() {
-  const me = employeeById(currentUsers.employee);
-  const worked = myAttendance.filter((a) => a.status === "Present" || a.status === "Late");
-  const late = myAttendance.filter((a) => a.status === "Late").length;
-  const leaveDays = myAttendance.filter((a) => a.status === "On leave").length;
-  const hours = worked.reduce((s, a) => s + a.hours, 0);
-  const balance = leaveTypes.reduce((s, l) => s + l.allowed - l.used, 0);
-  const myTasks = tasks.filter((t) => t.assignee === me.id && t.status !== "Completed");
-  const myTickets = ticketCounts(tickets.filter((t) => t.employeeId === me.id));
+export default async function EmployeeDashboard() {
+  const me = await requirePortal("employee");
+  const now = new Date();
+  const [{ today, office }, last30, calendar, balances, holidays] = await Promise.all([myPunchCard(), myLast30Days(), myCalendar(), balancesFor(me.employeeId, Number(localDate(now).slice(0, 4))), upcomingHolidays()]);
+  const balance = balances.reduce((s, l) => s + l.allowed - l.used, 0);
+  const hour = Number(localTime(now).slice(0, 2));
+  const greeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
+  // Tasks and tickets move to the database in later phases; until then they show the sample employee's items
+  const sampleId = "EMP-1024";
+  const myTasks = tasks.filter((t) => t.assignee === sampleId && t.status !== "Completed");
+  const myTickets = ticketCounts(tickets.filter((t) => t.employeeId === sampleId));
   const firstName = me.name.split(" ")[0];
 
   return (
     <>
-      <PageHeader title={`Good morning, ${firstName}`} subtitle={`${me.id} · ${me.designation} · ${me.department}`} />
+      <PageHeader title={`${greeting}, ${firstName}`} subtitle={`${me.employeeId} · ${me.designation} · ${me.department}`} />
 
       <div className="grid gap-6 xl:grid-cols-3">
         <div className="min-w-0 xl:col-span-2">
-          <PunchCard />
+          <PunchCard today={today} office={office} />
         </div>
         <Card title="Leave balance" action={<Link href="/employee/leave" className="text-xs font-medium text-accent-700 hover:underline">Apply</Link>}>
           <p className="text-3xl font-semibold text-navy-900 tabular-nums">
             {balance} <span className="text-base font-normal text-ink-soft">days left</span>
           </p>
           <ul className="mt-4 space-y-2 text-sm">
-            {leaveTypes.map((l) => (
-              <li key={l.type} className="flex justify-between">
+            {balances.map((l) => (
+              <li key={l.typeId} className="flex justify-between">
                 <span className="text-ink-soft">{l.type}</span>
                 <span className="font-medium tabular-nums">
                   {l.allowed - l.used} / {l.allowed}
@@ -42,9 +48,9 @@ export default function EmployeeDashboard() {
       </div>
 
       <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard label="Days present (Oct)" value={worked.length} hint={`${leaveDays} on leave`} icon={CheckCircle2} tone="good" />
-        <StatCard label="Late arrivals (Oct)" value={late} hint="15 min grace" icon={Hourglass} tone="warn" />
-        <StatCard label="Hours worked (Oct)" value={hours.toFixed(1)} hint={`Avg ${(hours / worked.length).toFixed(1)} h/day`} icon={Clock} tone="blue" />
+        <StatCard label="Days present (30 days)" value={last30.present} hint={`of ${last30.workdays} working days · ${last30.leave} on leave`} icon={CheckCircle2} tone="good" />
+        <StatCard label="Late arrivals (30 days)" value={last30.late} hint={`${office.graceMin} min grace after ${office.workStart}`} icon={Hourglass} tone="warn" />
+        <StatCard label="Hours worked (30 days)" value={last30.hours.toFixed(1)} hint={last30.present ? `Avg ${(last30.hours / last30.present).toFixed(1)} h/day` : "No days worked yet"} icon={Clock} tone="blue" />
         <StatCard
           label="My tickets"
           value={
@@ -79,6 +85,7 @@ export default function EmployeeDashboard() {
 
         <Card title={<span className="flex items-center gap-2"><PartyPopper className="size-4 text-accent-600" /> Upcoming holidays</span>} pad={false}>
           <ul className="divide-y divide-line">
+            {holidays.length === 0 && <li className="px-5 py-6 text-center text-sm text-ink-faint">No upcoming holidays.</li>}
             {holidays.map((h) => (
               <li key={h.date} className="flex items-center gap-3 px-5 py-3">
                 <span className="grid w-11 shrink-0 rounded-lg bg-accent-50 py-1 text-center">
@@ -111,24 +118,11 @@ export default function EmployeeDashboard() {
           </ul>
         </Card>
 
-        <Card title={<span className="flex items-center gap-2"><CalendarDays className="size-4 text-accent-600" /> October at a glance</span>}>
-          <MiniCalendar />
-          <div className="mt-4 flex flex-wrap gap-3 text-xs text-ink-soft">
-            <Legend className="bg-good" label="Present" />
-            <Legend className="bg-warn" label="Late" />
-            <Legend className="bg-accent-500" label="Leave" />
-            <Legend className="bg-line" label="Weekend" />
-          </div>
+        <Card title={<span className="flex items-center gap-2"><CalendarDays className="size-4 text-accent-600" /> {monthLabel(calendar.month)} at a glance</span>} action={<Link href="/employee/attendance" className="text-xs font-medium text-accent-700 hover:underline">Details</Link>}>
+          <MiniCalendar month={calendar.month} days={calendar.days} />
+          <CalendarLegend />
         </Card>
       </div>
     </>
-  );
-}
-
-function Legend({ className, label }: { className: string; label: string }) {
-  return (
-    <span className="flex items-center gap-1.5">
-      <span className={`size-2.5 rounded-sm ${className}`} /> {label}
-    </span>
   );
 }
