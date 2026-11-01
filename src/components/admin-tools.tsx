@@ -4,7 +4,7 @@ import { Plus } from "lucide-react";
 import { useActionState, useState } from "react";
 import { createDepartment } from "@/app/actions/people";
 import type { ActionResult, Option } from "@/lib/types";
-import { Modal } from "./client-ui";
+import { Modal, keepOnSubmit } from "./client-ui";
 import { buttonClass, Field, inputClass } from "./ui";
 
 export function DepartmentEditor({ people }: { people: Option[] }) {
@@ -45,7 +45,7 @@ function DepartmentForm({ people, onClose }: { people: Option[]; onClose: () => 
     );
   }
   return (
-    <form action={action} className="space-y-4">
+    <form onSubmit={keepOnSubmit(action)} className="space-y-4">
       <Field label="Department name">
         <input name="name" required minLength={2} maxLength={60} className={inputClass} placeholder="e.g. Treasury" />
       </Field>

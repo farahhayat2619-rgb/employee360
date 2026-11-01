@@ -315,8 +315,12 @@ model Policy {
   title     String
   category  String
   version   String
-  fileUrl   String?
+  summary   String?
   pages     Int?
+  fileName  String?
+  fileSize  Int?
+  fileData  Bytes? // PDF stored in the database so it works on any host without separate file storage
+  updatedBy String?
   updatedAt DateTime @updatedAt
 }
 
@@ -332,7 +336,9 @@ model Task {
   status       TaskStatus @default(TODO)
   progress     Int        @default(0)
   priority     Priority   @default(MEDIUM)
+  note         String? // latest progress note from the assignee
   createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @default(now()) @updatedAt
 
   @@index([assigneeId])
 }

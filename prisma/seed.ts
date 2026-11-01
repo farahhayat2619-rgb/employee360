@@ -5,6 +5,7 @@ import "dotenv/config";
 import bcrypt from "bcryptjs";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient, type Role } from "../src/generated/prisma/client";
+import { textDocumentPdf } from "../src/lib/pdf";
 import * as S from "../src/lib/sample-data";
 
 const db = new PrismaClient({ adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL! }) });
@@ -115,8 +116,8 @@ async function main() {
             status: p.status === "Inactive" ? "INACTIVE" : p.status === "On leave" ? "ON_LEAVE" : "ACTIVE",
             departmentId: deptId(p.department),
             officeId: officeId(p.office),
-            address: p.id === "EMP-1024" ? "House 14, Block 5, Clifton, Karachi" : null,
-            emergencyContact: p.id === "EMP-1024" ? "Faisal Khan (brother) · +92 321 555 0199" : null,
+            address: p.id === "EMP-1024" ? "House 14, Block 5, Clifton, Karachi" : sampleAddress(p.id, p.office),
+            emergencyContact: p.id === "EMP-1024" ? "Faisal Khan (brother) · +92 321 555 0199" : sampleEmergency(p.id, p.name),
           },
         },
       },
@@ -205,7 +206,30 @@ async function main() {
   // Goals, reviews, policies, tasks
   for (const g of S.goals) await db.goal.create({ data: { employeeId: g.employeeId, period: g.period === "Monthly" ? "MONTHLY" : "ANNUAL", title: g.title, kpi: g.kpi, target: g.target, progress: g.progress, due: day(g.due) } });
   for (const r of S.reviews) await db.review.create({ data: { employeeId: "EMP-1024", reviewerId: "EMP-1002", period: r.period, rating: r.rating, feedback: r.feedback } });
-  for (const p of S.policies) await db.policy.create({ data: { title: p.title, category: p.category, version: p.version, pages: p.pages, updatedAt: day(p.updated) } });
+  // Goals and an H1 review for everyone else, so the performance boards have real rows
+  const headOf = new Map(S.departments.map((d) => [d.name, byName.get(d.head)]));
+  for (const [idx, p] of people.entries()) {
+    if (p.id === "EMP-1024" || p.status === "Inactive") continue;
+    const [g1, g2] = goalIdeas[idx % goalIdeas.length];
+    await db.goal.create({ data: { employeeId: p.id, period: "MONTHLY", ...g1, progress: (idx * 17) % 101, due: day("2026-11-30") } });
+    await db.goal.create({ data: { employeeId: p.id, period: "ANNUAL", ...g2, progress: 40 + ((idx * 13) % 61), due: day("2026-12-31") } });
+    const reviewer = byName.get(p.managerName) ?? headOf.get(p.department);
+    if (reviewer && reviewer !== p.id) {
+      const rating = [3.5, 4, 4.5, 4, 3, 5, 4][idx % 7];
+      await db.review.create({ data: { employeeId: p.id, reviewerId: reviewer, period: "H1 2026", rating, feedback: feedbackFor(rating), createdAt: new Date("2026-07-10T09:00:00Z") } });
+    }
+  }
+  // Policies with real (sample) PDF documents
+  for (const p of S.policies) {
+    const text = policyText[p.title] ?? { summary: `${p.title} for Crescent Bank staff.`, sections: [] };
+    const { bytes, pages } = await textDocumentPdf(p.title, `Crescent Bank · ${p.category} · ${p.version} · Sample document for the Employee360 demo`, [
+      { heading: "Summary", body: text.summary },
+      ...text.sections,
+      { heading: "About this document", body: "This is a short sample document created for the Employee360 demo. HR replaces it by uploading the bank's approved policy as a new version." },
+    ]);
+    const fileName = `${p.title.replace(/[^\w]+/g, "-").replace(/-+$/, "")}-${p.version}.pdf`;
+    await db.policy.create({ data: { title: p.title, category: p.category, version: p.version, summary: text.summary, pages, fileName, fileSize: bytes.length, fileData: Buffer.from(bytes), updatedBy: "sana.malik@crescentbank.example", updatedAt: day(p.updated) } });
+  }
   const taskStatus = { "To do": "TODO", "In progress": "IN_PROGRESS", Completed: "COMPLETED" } as const;
   for (const t of S.tasks) await db.task.create({ data: { id: t.id, title: t.title, description: t.description, assigneeId: t.assignee, assignedById: byName.get(t.assignedBy)!, deadline: day(t.deadline), status: taskStatus[t.status], progress: t.progress, priority: t.priority.toUpperCase() as "HIGH" | "MEDIUM" | "LOW" } });
 
@@ -245,3 +269,88 @@ main()
     process.exit(1);
   })
   .finally(() => db.$disconnect());
+
+// ---- Sample content helpers (fictional) ----
+const areas: Record<string, string[]> = {
+  "Head Office, Karachi": ["Clifton, Karachi", "DHA Phase 6, Karachi", "Gulshan-e-Iqbal, Karachi", "PECHS, Karachi", "North Nazimabad, Karachi"],
+  "Gulberg Branch, Lahore": ["Gulberg III, Lahore", "Model Town, Lahore", "Johar Town, Lahore", "DHA Phase 5, Lahore"],
+};
+function sampleAddress(id: string, office: string) {
+  const n = Number(id.replace(/\D/g, ""));
+  const list = areas[office] ?? areas["Head Office, Karachi"];
+  return `House ${(n % 90) + 3}, Street ${(n % 17) + 1}, ${list[n % list.length]}`;
+}
+function sampleEmergency(id: string, name: string) {
+  const n = Number(id.replace(/\D/g, ""));
+  const rel = ["spouse", "father", "mother", "brother", "sister"][n % 5];
+  return `${name.split(" ").slice(-1)[0]} family (${rel}) · +92 3${(n % 5) + 10} 555 0${String(100 + (n % 900)).padStart(3, "0")}`;
+}
+const goalIdeas: [{ title: string; kpi: string; target: string }, { title: string; kpi: string; target: string }][] = [
+  [{ title: "Clear the month-end reconciliation backlog", kpi: "Open items", target: "Zero by 30 Nov" }, { title: "Complete AML refresher certification", kpi: "Modules passed", target: "6 of 6" }],
+  [{ title: "Improve customer satisfaction on branch visits", kpi: "CSAT score", target: "4.5 / 5" }, { title: "Grow new current accounts", kpi: "Accounts opened", target: "180 in 2026" }],
+  [{ title: "Reduce complaint resolution time", kpi: "Average days to close", target: "Under 3 days" }, { title: "Document team procedures", kpi: "SOPs published", target: "8" }],
+  [{ title: "Ship the internal reporting dashboard", kpi: "Reports migrated", target: "10" }, { title: "Lower system incident count", kpi: "P1 incidents", target: "Under 4 a year" }],
+  [{ title: "Finish quarterly variance analysis", kpi: "Reports on time", target: "100%" }, { title: "Cut manual journal entries", kpi: "Manual entries", target: "-30%" }],
+  [{ title: "Close open recruitment requests", kpi: "Roles filled", target: "5" }, { title: "Run the annual engagement survey", kpi: "Response rate", target: "80%" }],
+];
+function feedbackFor(r: number) {
+  if (r >= 4.5) return "Outstanding half year. Consistently goes beyond the role and helps the rest of the team. Ready for more responsibility.";
+  if (r >= 4) return "Strong, reliable work and good ownership of deadlines. Next focus: share knowledge with newer colleagues.";
+  if (r >= 3.5) return "Solid performance with steady improvement. Keep building confidence in handling escalations independently.";
+  return "Meets expectations. Let's agree a clear plan for the second half to lift turnaround times and accuracy.";
+}
+const policyText: Record<string, { summary: string; sections: { heading: string; body: string }[] }> = {
+  "HR Policy Manual": {
+    summary: "How Crescent Bank hires, develops, rewards and supports its people, and the standards every employee and manager follows.",
+    sections: [
+      { heading: "1. Employment", body: "All roles are filled through fair, documented selection. New staff complete a three-month probation with a review at the end of each month." },
+      { heading: "2. Performance", body: "Goals are agreed with your manager. Formal reviews happen twice a year, in July and January, with ratings from 1 to 5." },
+      { heading: "3. Pay and benefits", body: "Salaries are paid on the last working day of each month. Salary slips are published in Employee360." },
+    ],
+  },
+  "Attendance & Punctuality Policy": {
+    summary: "Office hours are 09:00 to 17:00, Monday to Friday. Attendance is marked with GPS Punch In and Punch Out inside the office radius.",
+    sections: [
+      { heading: "1. Marking attendance", body: "Punch In when you arrive and Punch Out when you leave, from inside your assigned office. Punches from outside the office radius are not accepted." },
+      { heading: "2. Late arrival", body: "A 15-minute grace period applies. Arrivals after 09:15 are marked late. Three late marks in a month are discussed with your manager." },
+      { heading: "3. Corrections", body: "If you could not punch for a valid reason, ask HR for a correction. Corrections need a written reason and are recorded in the audit log." },
+    ],
+  },
+  "Leave Policy 2026": {
+    summary: "Yearly allowances: 10 casual, 8 sick and 14 annual days. Weekends and public holidays are not counted as leave.",
+    sections: [
+      { heading: "1. Applying", body: "Apply in Employee360 before the leave starts. Sick leave can be logged up to 7 days after the fact." },
+      { heading: "2. Approval", body: "Your reporting manager or department head approves leave. You are notified as soon as a decision is made." },
+      { heading: "3. Cancellation", body: "You can withdraw a pending request, or ask to cancel approved leave that has not started. Cancelled days return to your balance." },
+    ],
+  },
+  "Code of Conduct": {
+    summary: "The behaviour Crescent Bank expects from everyone: integrity, confidentiality, respect and fair dealing with customers.",
+    sections: [
+      { heading: "1. Integrity", body: "Act honestly, avoid conflicts of interest and declare gifts above the set limit." },
+      { heading: "2. Confidentiality", body: "Customer and bank information is shared only with people who need it for their work." },
+    ],
+  },
+  "Employee Handbook": {
+    summary: "A practical guide for new and current staff: your first week, tools, benefits, and who to contact for what.",
+    sections: [
+      { heading: "Your first week", body: "Collect your ID card, sign in to Employee360, read the policies here and meet your manager to agree first goals." },
+      { heading: "Getting help", body: "Use the HR Helpdesk in Employee360 for HR questions and Complaint Tickets for issues that need a department to act." },
+    ],
+  },
+  "Anti-Harassment Policy": {
+    summary: "Crescent Bank does not tolerate harassment of any kind. This policy explains how to report concerns safely and how they are handled.",
+    sections: [{ heading: "Reporting", body: "Report concerns to HR or through a complaint ticket. Reports are handled confidentially and without retaliation." }],
+  },
+  "Remote Work Guidelines": {
+    summary: "When remote work is allowed, how to request it, and how attendance is recorded on approved remote days.",
+    sections: [{ heading: "Approval", body: "Remote days need your manager's approval in advance. HR records approved remote days as attendance corrections with the reason." }],
+  },
+  "Information Security Policy": {
+    summary: "Rules for passwords, devices, email and customer data that keep the bank and its customers safe.",
+    sections: [
+      { heading: "Passwords", body: "Use a unique password of at least 12 characters. Never share it, including with IT or HR." },
+      { heading: "Phishing", body: "Report suspicious emails to IT Security. Do not open attachments or links you did not expect." },
+    ],
+  },
+};

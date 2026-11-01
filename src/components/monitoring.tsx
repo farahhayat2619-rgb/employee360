@@ -5,13 +5,13 @@ import { useRouter } from "next/navigation";
 import { useActionState, useMemo, useState } from "react";
 import { correctAttendance } from "@/app/actions/attendance";
 import { monthLabel } from "@/lib/time";
-import { announcements as seedAnn, departments as sampleDepartments, formatDate, employees, goals as seedGoals, type Announcement, type Goal } from "@/lib/sample-data";
+import { announcements as seedAnn, departments as sampleDepartments, formatDate, type Announcement } from "@/lib/sample-data";
 import { TrendLine, Bars } from "./charts";
-import { Modal, useToast } from "./client-ui";
+import { Modal, useToast, keepOnSubmit } from "./client-ui";
 import type { ActionResult, BoardRow, DepartmentSummary } from "@/lib/types";
 import { SourceBadge } from "./attendance-parts";
 import { Filters } from "./people";
-import { Avatar, Badge, buttonClass, Card, DataTable, Field, inputClass, Progress, StatusBadge } from "./ui";
+import { Avatar, Badge, buttonClass, Card, DataTable, Field, inputClass, StatusBadge } from "./ui";
 
 type Board = { date: string; today: string; holiday: string | null; weekend: boolean; rows: BoardRow[]; trend: { day: string; rate: number }[]; month: string; scopeDept: string | null };
 const boardStatuses = ["Present", "Late", "Absent", "On leave", "Not punched in"] as const;
@@ -124,7 +124,7 @@ function CorrectionForm({ row, date, onClose, onDone }: { row: BoardRow; date: s
   }, undefined);
   const current = { Present: "PRESENT", Late: "LATE", Absent: "ABSENT", "On leave": "ON_LEAVE" }[row.status as string] ?? "PRESENT";
   return (
-    <form action={action} className="space-y-4">
+    <form onSubmit={keepOnSubmit(action)} className="space-y-4">
       <input type="hidden" name="employeeId" value={row.id} />
       <input type="hidden" name="date" value={date} />
       <p className="text-sm text-ink-soft">
@@ -189,91 +189,6 @@ export function DepartmentsOverview({ departments }: { departments: DepartmentSu
         <Bars data={departments.filter((d) => d.attendanceRate !== null).map((d) => ({ dept: d.name, rate: d.attendanceRate as number }))} x="dept" y="rate" horizontal format="pct" />
       </Card>
     </div>
-  );
-}
-
-export function PerformanceBoard({ scopeDept, canAssign }: { scopeDept?: string; canAssign?: boolean }) {
-  const team = employees.filter((e) => !scopeDept || e.department === scopeDept);
-  const [goals, setGoals] = useState<Goal[]>(seedGoals);
-  const [open, setOpen] = useState(false);
-  const { show, toast } = useToast();
-  const goalStats = (id: string) => {
-    const g = goals.filter((x) => x.employeeId === id);
-    return g.length ? { count: g.length, avg: Math.round(g.reduce((s, x) => s + x.progress, 0) / g.length) } : null;
-  };
-
-  return (
-    <>
-      <Card
-        title="Team performance & goals"
-        action={
-          canAssign && (
-            <button className={buttonClass("primary", "sm")} onClick={() => setOpen(true)}>
-              <Plus className="size-3.5" /> Assign goal
-            </button>
-          )
-        }
-        pad={false}
-      >
-        <DataTable
-          rows={team}
-          rowKey={(e) => e.id}
-          columns={[
-            { key: "n", header: "Employee", cell: (e) => <span className="flex items-center gap-3"><Avatar name={e.name} size="sm" /><span><span className="block font-medium text-navy-900">{e.name}</span><span className="text-xs text-ink-faint">{e.designation}</span></span></span> },
-            { key: "d", header: "Department", cell: (e) => e.department },
-            { key: "g", header: "Active goals", cell: (e) => goalStats(e.id)?.count ?? 0 },
-            { key: "c", header: "Goal completion", cell: (e) => { const s = goalStats(e.id); return s ? <span className="flex w-32 items-center gap-2"><Progress value={s.avg} /><span className="text-xs tabular-nums">{s.avg}%</span></span> : <span className="text-xs text-ink-faint">No goals yet</span>; } },
-            { key: "p", header: "KPI score", cell: (e) => <Badge tone={e.performance >= 85 ? "good" : e.performance >= 75 ? "blue" : "warn"}>{e.performance} / 100</Badge> },
-          ]}
-        />
-      </Card>
-      <Modal open={open} onClose={() => setOpen(false)} title="Assign a goal">
-        <form
-          action={(f) => {
-            const g: Goal = { id: `G-${600 + goals.length}`, employeeId: String(f.get("emp")), period: f.get("period") as Goal["period"], title: String(f.get("title")), kpi: String(f.get("kpi")), target: String(f.get("target")), progress: 0, due: String(f.get("due")) };
-            setGoals((l) => [...l, g]);
-            setOpen(false);
-            show(`Goal assigned to ${employees.find((e) => e.id === g.employeeId)?.name}`);
-          }}
-          className="space-y-4"
-        >
-          <Field label="Employee">
-            <select name="emp" className={inputClass} required>
-              {team.map((e) => (
-                <option key={e.id} value={e.id}>{e.name} ({e.id})</option>
-              ))}
-            </select>
-          </Field>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Field label="Period">
-              <select name="period" className={inputClass}>
-                <option>Monthly</option>
-                <option>Annual</option>
-              </select>
-            </Field>
-            <Field label="Due date">
-              <input type="date" name="due" required className={inputClass} />
-            </Field>
-          </div>
-          <Field label="Goal">
-            <input name="title" required className={inputClass} placeholder="e.g. Reduce complaint resolution time" />
-          </Field>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Field label="KPI">
-              <input name="kpi" required className={inputClass} placeholder="Average days to resolve" />
-            </Field>
-            <Field label="Target">
-              <input name="target" required className={inputClass} placeholder="Under 3 days" />
-            </Field>
-          </div>
-          <div className="flex justify-end gap-2">
-            <button type="button" className={buttonClass("outline")} onClick={() => setOpen(false)}>Cancel</button>
-            <button type="submit" className={buttonClass("primary")}>Assign goal</button>
-          </div>
-        </form>
-      </Modal>
-      {toast}
-    </>
   );
 }
 

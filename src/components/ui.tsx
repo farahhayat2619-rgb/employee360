@@ -94,13 +94,15 @@ export function Progress({ value, tone = "blue" }: { value: number; tone?: "blue
   );
 }
 
-export function Avatar({ name, size = "md" }: { name: string; size?: "sm" | "md" | "lg" }) {
+export function Avatar({ name, size = "md", src }: { name: string; size?: "sm" | "md" | "lg"; src?: string | null }) {
   const initials = name
     .split(" ")
     .map((p) => p[0])
     .slice(0, 2)
     .join("");
   const s = size === "lg" ? "size-20 text-2xl" : size === "sm" ? "size-8 text-xs" : "size-10 text-sm";
+  // eslint-disable-next-line @next/next/no-img-element -- small same-origin photo from our own API
+  if (src) return <img src={src} alt={name} className={clsx("shrink-0 rounded-full object-cover", s)} />;
   return <span className={clsx("grid shrink-0 place-items-center rounded-full bg-navy-800 font-semibold text-white", s)}>{initials}</span>;
 }
 

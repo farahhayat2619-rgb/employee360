@@ -6,7 +6,7 @@ import { useActionState, useState, useTransition } from "react";
 import { addHoliday, applyLeave, decideLeave, removeHoliday, saveAllowances, withdrawLeave } from "@/app/actions/leave";
 import { formatDate } from "@/lib/sample-data";
 import type { ActionResult, LeaveBalanceRow, LeaveRow } from "@/lib/types";
-import { Modal, Tabs, useToast } from "./client-ui";
+import { Modal, Tabs, useToast, keepOnSubmit } from "./client-ui";
 import { Avatar, buttonClass, Card, DataTable, Field, inputClass, PageHeader, Progress, StatusBadge } from "./ui";
 
 const dates = (r: { from: string; to: string }) => (r.from === r.to ? formatDate(r.from) : `${formatDate(r.from, { day: "numeric", month: "short" })} – ${formatDate(r.to)}`);
@@ -151,7 +151,7 @@ function ApplyForm({ today, balances, holidays, onDone, onClose }: { today: stri
     );
   }
   return (
-    <form action={action} className="space-y-4">
+    <form onSubmit={keepOnSubmit(action)} className="space-y-4">
       <Field label="Leave type">
         <select name="leaveTypeId" className={inputClass} required>
           {balances.map((l) => (
@@ -287,7 +287,7 @@ function DecideForm({ r, approve, onClose, onDone }: { r: LeaveRow; approve: boo
   }, undefined);
   const needReason = !approve && r.status === "Pending";
   return (
-    <form action={action} className="space-y-4">
+    <form onSubmit={keepOnSubmit(action)} className="space-y-4">
       <input type="hidden" name="id" value={r.id} />
       <input type="hidden" name="decision" value={approve ? "approve" : "reject"} />
       <p className="text-sm text-ink-soft">
@@ -315,7 +315,7 @@ export function AllowancesForm({ year, types }: { year: number; types: { id: str
   const [state, action, pending] = useActionState<ActionResult, FormData>(saveAllowances, undefined);
   return (
     <Card title={`Days per year, ${year}`} className="max-w-xl">
-      <form action={action} className="space-y-3">
+      <form onSubmit={keepOnSubmit(action)} className="space-y-3">
         {types.map((t) => (
           <div key={t.id} className="flex items-center justify-between gap-4">
             <label htmlFor={`days_${t.id}`} className="text-sm font-medium text-navy-900">
@@ -342,7 +342,7 @@ export function HolidayCalendar({ holidays }: { holidays: { id: string; date: st
   const { show, toast } = useToast();
   return (
     <Card pad={false}>
-      <form action={action} key={state?.ok ? state.message : "form"} className="flex flex-col gap-2 border-b border-line p-4 sm:flex-row">
+      <form onSubmit={keepOnSubmit(action)} key={state?.ok ? state.message : "form"} className="flex flex-col gap-2 border-b border-line p-4 sm:flex-row">
         <input name="date" type="date" required className={`${inputClass} sm:w-44`} aria-label="Date" />
         <input name="name" required minLength={3} maxLength={80} placeholder="Holiday name" className={inputClass} aria-label="Holiday name" />
         <button disabled={pending} className={buttonClass("primary")}>

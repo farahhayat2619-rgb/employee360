@@ -119,3 +119,44 @@ export type LeaveRow = {
   applied: string;
 };
 export type LeaveBalanceRow = { typeId: string; type: string; allowed: number; used: number; pending: number };
+
+// ---- Payroll (Phase 4) ----
+export type SlipView = {
+  id: string;
+  month: string; // YYYY-MM
+  employeeId: string;
+  employee: string;
+  department: string;
+  basic: number;
+  house: number;
+  transport: number;
+  medical: number;
+  tax: number;
+  providentFund: number;
+  other: number;
+  gross: number;
+  deductions: number;
+  net: number;
+  published: boolean;
+};
+
+// ---- Goals & performance (Phase 4) ----
+export type GoalView = { id: string; employeeId: string; period: "Monthly" | "Annual"; title: string; kpi: string; target: string; progress: number; due: string };
+export type ReviewView = { id: string; period: string; rating: number; feedback: string; reviewer: string; date: string };
+export type TeamMemberPerf = { id: string; name: string; designation: string; department: string; goals: number; avgProgress: number | null; rating: number | null; ratingPeriod: string | null };
+
+// ---- Policies & tasks (Phase 4) ----
+export type PolicyView = { id: string; title: string; category: string; version: string; summary: string | null; pages: number | null; fileSize: number | null; hasFile: boolean; updated: string };
+export type TaskView = {
+  id: string;
+  title: string;
+  description: string;
+  assigneeId: string;
+  assignee: string;
+  assignedBy: string;
+  deadline: string;
+  status: "To do" | "In progress" | "Completed";
+  progress: number;
+  priority: "High" | "Medium" | "Low";
+  note: string | null;
+};
