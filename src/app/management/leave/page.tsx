@@ -1,11 +1,15 @@
-import { LeaveApprovals } from "@/components/leave-approvals";
+import { LeaveApprovals } from "@/components/leave-views";
 import { PageHeader } from "@/components/ui";
+import { requirePortal } from "@/lib/auth";
+import { leaveForApproval } from "@/lib/leave";
 
-export default function Page() {
+export default async function Page() {
+  const me = await requirePortal("management");
+  const { rows } = await leaveForApproval("management");
   return (
     <>
-      <PageHeader title="Leave Requests" subtitle="Approve or decline your team's leave. The employee is notified straight away." />
-      <LeaveApprovals scopeDept="Operations" />
+      <PageHeader title="Leave Requests" subtitle={`${me.department} and your direct reports. The employee is notified as soon as you decide.`} />
+      <LeaveApprovals rows={rows} />
     </>
   );
 }
