@@ -1,0 +1,416 @@
+// Employee360 data model. Every record links back to an employee so dashboards and reports read live data.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  EMPLOYEE
+  MANAGEMENT
+  ADMIN
+}
+
+enum EmployeeStatus {
+  ACTIVE
+  ON_LEAVE
+  INACTIVE
+}
+
+enum EmploymentType {
+  PERMANENT
+  CONTRACT
+}
+
+enum AttendanceStatus {
+  PRESENT
+  LATE
+  ABSENT
+  ON_LEAVE
+}
+
+enum LeaveStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCEL_REQUESTED
+  CANCELLED
+}
+
+enum GoalPeriod {
+  MONTHLY
+  ANNUAL
+}
+
+enum TaskStatus {
+  TODO
+  IN_PROGRESS
+  COMPLETED
+}
+
+enum Priority {
+  HIGH
+  MEDIUM
+  LOW
+}
+
+enum AnnouncementType {
+  HR
+  COMPANY_NEWS
+  HOLIDAY
+  REMINDER
+  IMPORTANT
+}
+
+enum HelpdeskStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+}
+
+enum TicketStatus {
+  OPEN
+  PENDING
+  CLOSED
+}
+
+model User {
+  id           String    @id @default(cuid())
+  email        String    @unique
+  passwordHash String
+  role         Role      @default(EMPLOYEE)
+  active       Boolean   @default(true)
+  lastLoginAt  DateTime?
+  createdAt    DateTime  @default(now())
+  employee     Employee?
+  sessions     Session[]
+}
+
+model Session {
+  id        String   @id // SHA-256 of the cookie token; the raw token is never stored
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+model LoginAttempt {
+  id        String   @id @default(cuid())
+  email     String
+  ip        String
+  success   Boolean
+  createdAt DateTime @default(now())
+
+  @@index([email, createdAt])
+  @@index([ip, createdAt])
+}
+
+model Department {
+  id          String     @id @default(cuid())
+  name        String     @unique
+  description String?
+  headId      String?    @unique
+  head        Employee?  @relation("DepartmentHead", fields: [headId], references: [id])
+  employees   Employee[] @relation("DepartmentMembers")
+  createdAt   DateTime   @default(now())
+}
+
+model Office {
+  id        String     @id @default(cuid())
+  name      String     @unique
+  address   String
+  latitude  Float
+  longitude Float
+  radiusM   Int        @default(100)
+  workStart String     @default("09:00") // HH:mm, office local time
+  workEnd   String     @default("17:00")
+  graceMin  Int        @default(15)
+  employees Employee[]
+}
+
+model Employee {
+  id             String         @id // e.g. EMP-1024
+  userId         String         @unique
+  user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name           String
+  phone          String
+  address        String?
+  emergencyContact String?
+  photoUrl       String?
+  designation    String
+  joiningDate    DateTime       @db.Date
+  type           EmploymentType @default(PERMANENT)
+  status         EmployeeStatus @default(ACTIVE)
+  departmentId   String
+  department     Department     @relation("DepartmentMembers", fields: [departmentId], references: [id])
+  officeId       String
+  office         Office         @relation(fields: [officeId], references: [id])
+  managerId      String?
+  manager        Employee?      @relation("Reports", fields: [managerId], references: [id])
+  reports        Employee[]     @relation("Reports")
+  headOf         Department?    @relation("DepartmentHead")
+
+  salary         SalaryStructure?
+  attendance     Attendance[]
+  leaveBalances  LeaveBalance[]
+  leaveRequests  LeaveRequest[]  @relation("LeaveApplicant")
+  leaveDecisions LeaveRequest[]  @relation("LeaveApprover")
+  payslips       Payslip[]
+  goals          Goal[]
+  reviewsGot     Review[]        @relation("Reviewee")
+  reviewsGiven   Review[]        @relation("Reviewer")
+  tasks          Task[]          @relation("TaskAssignee")
+  tasksAssigned  Task[]          @relation("TaskAssigner")
+  helpdesk       HelpdeskRequest[]
+  tickets        Ticket[]
+  ticketUpdates  TicketUpdate[]
+  notifications  Notification[]
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  @@index([departmentId])
+  @@index([managerId])
+}
+
+model Attendance {
+  id           String           @id @default(cuid())
+  employeeId   String
+  employee     Employee         @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  date         DateTime         @db.Date
+  punchInAt    DateTime?
+  punchInLat   Float?
+  punchInLng   Float?
+  punchInDistM Int?
+  punchInAccM  Int?
+  punchOutAt   DateTime?
+  punchOutLat  Float?
+  punchOutLng  Float?
+  punchOutDistM Int?
+  punchOutAccM Int?
+  officeName   String?
+  minutesWorked Int             @default(0)
+  status       AttendanceStatus
+  late         Boolean          @default(false)
+  earlyLeave   Boolean          @default(false)
+  gpsVerified  Boolean          @default(false) // false for demo/seeded rows and HR corrections
+  correctedBy  String?
+  correctionNote String?
+
+  @@unique([employeeId, date])
+  @@index([date])
+}
+
+model Holiday {
+  id   String   @id @default(cuid())
+  date DateTime @unique @db.Date
+  name String
+}
+
+model LeaveType {
+  id          String         @id @default(cuid())
+  name        String         @unique // Casual, Sick, Annual
+  daysPerYear Int
+  balances    LeaveBalance[]
+  requests    LeaveRequest[]
+}
+
+model LeaveBalance {
+  id          String    @id @default(cuid())
+  employeeId  String
+  employee    Employee  @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  leaveTypeId String
+  leaveType   LeaveType @relation(fields: [leaveTypeId], references: [id])
+  year        Int
+  allowed     Int
+  used        Int       @default(0)
+
+  @@unique([employeeId, leaveTypeId, year])
+}
+
+model LeaveRequest {
+  id          String      @id // e.g. LV-2026-0311
+  employeeId  String
+  employee    Employee    @relation("LeaveApplicant", fields: [employeeId], references: [id], onDelete: Cascade)
+  leaveTypeId String
+  leaveType   LeaveType   @relation(fields: [leaveTypeId], references: [id])
+  fromDate    DateTime    @db.Date
+  toDate      DateTime    @db.Date
+  days        Int
+  reason      String
+  status      LeaveStatus @default(PENDING)
+  approverId  String?
+  approver    Employee?   @relation("LeaveApprover", fields: [approverId], references: [id])
+  comment     String?
+  createdAt   DateTime    @default(now())
+  decidedAt   DateTime?
+
+  @@index([employeeId])
+  @@index([status])
+}
+
+model SalaryStructure {
+  employeeId     String   @id
+  employee       Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  basic          Int
+  house          Int
+  transport      Int
+  medical        Int
+  taxRatePct     Float    @default(8.5) // sample flat rule for the demo
+  providentPct   Float    @default(8.33)
+  updatedAt      DateTime @updatedAt
+}
+
+model Payslip {
+  id           String   @id @default(cuid())
+  employeeId   String
+  employee     Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  month        DateTime @db.Date // first day of the month
+  basic        Int
+  house        Int
+  transport    Int
+  medical      Int
+  tax          Int
+  providentFund Int
+  other        Int      @default(0)
+  net          Int
+  published    Boolean  @default(false)
+  createdAt    DateTime @default(now())
+
+  @@unique([employeeId, month])
+}
+
+model Goal {
+  id         String     @id @default(cuid())
+  employeeId String
+  employee   Employee   @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  period     GoalPeriod
+  title      String
+  kpi        String
+  target     String
+  progress   Int        @default(0)
+  due        DateTime   @db.Date
+  createdAt  DateTime   @default(now())
+}
+
+model Review {
+  id         String   @id @default(cuid())
+  employeeId String
+  employee   Employee @relation("Reviewee", fields: [employeeId], references: [id], onDelete: Cascade)
+  reviewerId String
+  reviewer   Employee @relation("Reviewer", fields: [reviewerId], references: [id])
+  period     String // e.g. H1 2026
+  rating     Float
+  feedback   String
+  createdAt  DateTime @default(now())
+}
+
+model Policy {
+  id        String   @id @default(cuid())
+  title     String
+  category  String
+  version   String
+  fileUrl   String?
+  pages     Int?
+  updatedAt DateTime @updatedAt
+}
+
+model Task {
+  id           String     @id // e.g. T-2201
+  title        String
+  description  String
+  assigneeId   String
+  assignee     Employee   @relation("TaskAssignee", fields: [assigneeId], references: [id], onDelete: Cascade)
+  assignedById String
+  assignedBy   Employee   @relation("TaskAssigner", fields: [assignedById], references: [id])
+  deadline     DateTime   @db.Date
+  status       TaskStatus @default(TODO)
+  progress     Int        @default(0)
+  priority     Priority   @default(MEDIUM)
+  createdAt    DateTime   @default(now())
+
+  @@index([assigneeId])
+}
+
+model Announcement {
+  id          String           @id @default(cuid())
+  title       String
+  body        String
+  type        AnnouncementType
+  audience    String // "All staff" or a department name
+  authorName  String
+  publishedAt DateTime         @default(now())
+}
+
+model Notification {
+  id         String   @id @default(cuid())
+  employeeId String
+  employee   Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  type       String
+  message    String
+  link       String?
+  read       Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  @@index([employeeId, read])
+}
+
+model HelpdeskRequest {
+  id         String         @id // e.g. HR-0457
+  employeeId String
+  employee   Employee       @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  subject    String
+  message    String
+  status     HelpdeskStatus @default(OPEN)
+  reply      String?
+  createdAt  DateTime       @default(now())
+}
+
+model Ticket {
+  id            String         @id // e.g. TKT-2026-00042
+  subject       String
+  description   String
+  submittedById String
+  submittedBy   Employee       @relation(fields: [submittedById], references: [id])
+  department    String // submitter's department at submission time
+  forwardedTo   String? // department name
+  status        TicketStatus   @default(OPEN)
+  latestUpdate  String
+  resolution    String?
+  createdAt     DateTime       @default(now())
+  updates       TicketUpdate[]
+
+  @@index([status])
+  @@index([forwardedTo])
+}
+
+model TicketUpdate {
+  id       String   @id @default(cuid())
+  ticketId String
+  ticket   Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  byId     String
+  by       Employee @relation(fields: [byId], references: [id])
+  action   String // Submitted, Forwarded, Updated, Closed
+  note     String
+  at       DateTime @default(now())
+
+  @@index([ticketId])
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  actorEmail String
+  action    String
+  entity    String
+  entityId  String
+  before    Json?
+  after     Json?
+  at        DateTime @default(now())
+
+  @@index([entity, entityId])
+}

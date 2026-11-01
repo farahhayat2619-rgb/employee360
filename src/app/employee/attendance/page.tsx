@@ -24,7 +24,7 @@ export default function AttendancePage() {
     { key: "in", header: "Punch in", cell: (a) => a.in ?? "—", className: "tabular-nums" },
     { key: "out", header: "Punch out", cell: (a) => a.out ?? "—", className: "tabular-nums" },
     { key: "hours", header: "Hours", cell: (a) => (a.hours ? `${a.hours.toFixed(1)} h` : "—"), className: "tabular-nums" },
-    { key: "loc", header: "Location", cell: (a) => (a.location ? <span className="text-ink-soft">{a.location}</span> : "—") },
+    { key: "loc", header: "Location", cell: (a) => (a.location ? <span className="whitespace-nowrap text-ink-soft">{a.location}</span> : "—") },
     { key: "status", header: "Status", cell: (a) => <span className="flex gap-1.5"><StatusBadge status={a.status} />{a.early && <Badge tone="warn">Early out</Badge>}<Badge tone="grey">Demo</Badge></span> },
   ];
 

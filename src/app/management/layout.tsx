@@ -1,5 +1,10 @@
-import { AppShell } from "@/components/app-shell";
+import { Suspense } from "react";
+import { PortalGate, ShellSkeleton } from "@/components/portal-gate";
 
 export default function Layout({ children }: { children: React.ReactNode }) {
-  return <AppShell role="management">{children}</AppShell>;
+  return (
+    <Suspense fallback={<ShellSkeleton />}>
+      <PortalGate portal="management">{children}</PortalGate>
+    </Suspense>
+  );
 }

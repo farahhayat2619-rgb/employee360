@@ -6,7 +6,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, type ReactNode } from "react";
 import { navByRole, roleLabels } from "@/lib/nav";
-import { currentUsers, employeeById, notifications, type Role } from "@/lib/sample-data";
+import { logout } from "@/app/actions/auth";
+import type { Role } from "@/lib/sample-data";
 import { Avatar } from "./ui";
 
 function Logo() {
@@ -21,12 +22,12 @@ function Logo() {
   );
 }
 
-export function AppShell({ role, children }: { role: Role; children: ReactNode }) {
+type ShellUser = { name: string; designation: string; portals: Role[] };
+
+export function AppShell({ role, user, unread, children }: { role: Role; user: ShellUser; unread: number; children: ReactNode }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const [menu, setMenu] = useState(false);
-  const user = employeeById(currentUsers[role]);
-  const unread = notifications.filter((n) => !n.read).length;
 
   // Close the mobile menu and user menu after navigation
   const [lastPath, setLastPath] = useState(pathname);
@@ -116,7 +117,7 @@ export function AppShell({ role, children }: { role: Role; children: ReactNode }
             {unread > 0 && <span className="absolute top-1 right-1 grid size-4 place-items-center rounded-full bg-bad text-[10px] font-semibold text-white">{unread}</span>}
           </Link>
           <div className="relative">
-            <button onClick={() => setMenu((m) => !m)} className="flex items-center gap-2 rounded-lg p-1 pr-2 hover:bg-navy-50" aria-expanded={menu}>
+            <button onClick={() => setMenu((m) => !m)} className="flex items-center gap-2 rounded-lg p-1 pr-2 hover:bg-navy-50" aria-expanded={menu} aria-label="Account menu">
               <Avatar name={user.name} size="sm" />
               <span className="hidden text-left sm:block">
                 <span className="block text-sm leading-tight font-medium text-navy-900">{user.name}</span>
@@ -126,16 +127,18 @@ export function AppShell({ role, children }: { role: Role; children: ReactNode }
             </button>
             {menu && (
               <div className="absolute right-0 mt-2 w-64 rounded-xl border border-line bg-surface p-2 shadow-pop">
-                <p className="px-3 pt-1 pb-2 text-xs text-ink-faint">Design preview: switch portal</p>
-                {(Object.keys(roleLabels) as Role[]).map((r) => (
+                {user.portals.length > 1 && <p className="px-3 pt-1 pb-2 text-xs text-ink-faint">Switch portal</p>}
+                {user.portals.length > 1 && user.portals.map((r) => (
                   <Link key={r} href={`/${r}`} className={clsx("block rounded-lg px-3 py-2 text-sm hover:bg-navy-50", r === role && "font-semibold text-accent-700")}>
                     {roleLabels[r]} portal
                   </Link>
                 ))}
-                <div className="my-1 border-t border-line" />
-                <Link href="/" className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-bad hover:bg-bad-50">
-                  <LogOut className="size-4" /> Sign out
-                </Link>
+                {user.portals.length > 1 && <div className="my-1 border-t border-line" />}
+                <form action={logout}>
+                  <button type="submit" className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-bad hover:bg-bad-50">
+                    <LogOut className="size-4" /> Sign out
+                  </button>
+                </form>
               </div>
             )}
           </div>
@@ -143,7 +146,7 @@ export function AppShell({ role, children }: { role: Role; children: ReactNode }
       </header>
 
       <div className="border-b border-warn/20 bg-warn-50 px-4 py-1.5 text-center text-xs text-warn sm:px-6">
-        Design preview with sample data. Login, database and real GPS attendance arrive in the next phases.
+        Preview build: employee records, departments and roles use the live database. Other modules still show sample data until their phase is built.
       </div>
 
       <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:py-8">{children}</main>
