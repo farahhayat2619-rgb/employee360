@@ -5,7 +5,7 @@ Employee360 is an employee management and HRMS web app for a corporate or bankin
 
 ## Status
 
-**Phase 5 of 6: tickets, helpdesk, announcements and notifications.** Sign-in is real, every portal page is protected by role, and everything except Reports is saved to PostgreSQL, including the dashboards and office geofence settings. Reports still show sample figures until Phase 6; a banner on every page says so.
+**Phase 6 of 6: reports, search and go-live.** Every screen runs on PostgreSQL: secure sign-in, three role-based portals, GPS attendance, leave, payroll with PDF slips, goals, policies, tasks, tickets, helpdesk, announcements, notifications and ten live reports.
 
 | Phase | Scope | Status |
 | --- | --- | --- |
@@ -14,7 +14,7 @@ Employee360 is an employee management and HRMS web app for a corporate or bankin
 | 3 | GPS Punch In / Out with office geofencing, leave | Done |
 | 4 | Profiles, payroll and PDF salary slips, goals, policies, tasks | Done |
 | 5 | Announcements, notifications, HR helpdesk, complaint tickets | Done |
-| 6 | Reports, polish, deploy | Next |
+| 6 | Reports, search, go-live | Done |
 
 ## Screens
 
@@ -84,7 +84,7 @@ Open http://localhost:3000, choose a portal and sign in.
 
 ### Demo accounts
 
-Every seeded account uses the password `Employee360!`. Change this before any real use.
+Every seeded account uses the password `Employee360!`, unless `SEED_PASSWORD` is set when the data is loaded (see Deploy). Use a private password for anything public.
 
 | Portal | Email |
 | --- | --- |
@@ -92,11 +92,17 @@ Every seeded account uses the password `Employee360!`. Change this before any re
 | Management | imran.siddiqui@crescentbank.example |
 | Admin / HR | sana.malik@crescentbank.example |
 
-## Deploy (Vercel)
+## Reports and search
 
-1. Create a PostgreSQL database (for example on Supabase) and copy its connection string.
-2. Import the GitHub repo in Vercel and add `DATABASE_URL` under Settings → Environment Variables.
-3. Run `npm run db:migrate` and `npm run db:seed` once against that database from your computer (with the same `DATABASE_URL` in `.env`).
-4. Deploy. The build runs `prisma generate` automatically.
+- **Reports:** ten reports (daily and monthly attendance, leave, department-wise attendance, working hours, performance, payroll summary, and open, pending and closed tickets) are calculated from the database for the chosen date range and department. Search inside a report, export the rows to CSV, or print / save as PDF. Managers see their own department; HR sees everyone.
+- **Search:** the box in the top bar finds pages, policies and tickets, plus employees for managers and HR. Results only include what that person's role may see.
 
-Sample data for modules not yet on the database lives in `src/lib/sample-data.ts`; the demo "today" is 2 November 2026.
+## Deploy (Vercel + Supabase)
+
+The build runs `scripts/prepare-db.mjs` before `next build`. With `DATABASE_URL` set, it applies the migrations and, **only if the database has no employees yet**, loads the demo data. A database that already has data is never touched.
+
+1. Create a free Supabase project. Under **Connect**, copy the **Session pooler** connection string (port 5432) and put your database password in it.
+2. Import the GitHub repo in Vercel. Add the environment variables `DATABASE_URL` (that string) and `SEED_PASSWORD` (a private password for every demo account). Deploy.
+3. Sign in as `sana.malik@crescentbank.example`, then set the real office locations under System Settings so GPS punch-in works where your staff are.
+
+Never commit `.env` or paste these values into chats or issues.
