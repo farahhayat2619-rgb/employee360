@@ -5,7 +5,7 @@ Employee360 is an employee management and HRMS web app for a corporate or bankin
 
 ## Status
 
-**Phase 2 of 6: database, secure login and roles.** Sign-in is real, every portal page is protected by role, and employee records, departments and role changes are saved to PostgreSQL. Attendance, leave, payroll, tickets and the other modules still show sample data until their phase is built; a banner on every page says so.
+**Phase 4 of 6: profiles, payroll, goals, policies and tasks.** Sign-in is real, every portal page is protected by role, and employees, departments, roles, attendance, leave, profiles, payroll, goals, reviews, policies and tasks are saved to PostgreSQL. Tickets, the HR helpdesk, announcements, notifications and reports still show sample data until Phases 5 and 6; a banner on every page says so.
 
 | Phase | Scope | Status |
 | --- | --- | --- |
