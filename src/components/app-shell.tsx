@@ -2,6 +2,7 @@
 
 import clsx from "clsx";
 import { Bell, ChevronDown, LogOut, Menu, Search, X } from "lucide-react";
+import Form from "next/form";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, type ReactNode } from "react";
@@ -88,8 +89,8 @@ export function AppShell({ role, user, unread, children }: { role: Role; user: S
   );
 
   return (
-    <div className="min-h-screen lg:pl-64">
-      <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 lg:block">{sidebar}</aside>
+    <div className="min-h-screen lg:pl-64 print:pl-0">
+      <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 lg:block print:hidden">{sidebar}</aside>
 
       {open && (
         <div className="fixed inset-0 z-40 lg:hidden">
@@ -98,20 +99,27 @@ export function AppShell({ role, user, unread, children }: { role: Role; user: S
         </div>
       )}
 
-      <header className="sticky top-0 z-20 flex h-16 items-center gap-3 border-b border-line bg-surface/95 px-4 backdrop-blur sm:px-6">
+      <header className="sticky top-0 z-20 flex print:hidden h-16 items-center gap-3 border-b border-line bg-surface/95 px-4 backdrop-blur sm:px-6">
         <button className="rounded-md p-2 text-navy-900 lg:hidden" onClick={() => setOpen(true)} aria-label="Open menu">
           <Menu className="size-5" />
         </button>
-        <div className="relative hidden max-w-md flex-1 sm:block">
+        <Form action={`/${role}/search`} role="search" className="relative hidden max-w-md flex-1 sm:block">
           <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-ink-faint" aria-hidden />
           <input
             type="search"
-            placeholder="Search employees, tickets, policies…"
+            name="q"
+            minLength={2}
+            maxLength={80}
+            required
+            placeholder={role === "employee" ? "Search pages, policies, my tickets…" : "Search employees, tickets, policies…"}
             className="w-full rounded-lg border border-line bg-canvas py-2 pr-3 pl-9 text-sm focus:border-accent-500 focus:bg-surface focus:outline-none"
             aria-label="Search"
           />
-        </div>
+        </Form>
         <div className="ml-auto flex items-center gap-2">
+          <Link href={`/${role}/search`} className="rounded-lg p-2 text-ink-soft hover:bg-navy-50 sm:hidden" aria-label="Search">
+            <Search className="size-5" />
+          </Link>
           <Link href="/employee/notifications" className="relative rounded-lg p-2 text-ink-soft hover:bg-navy-50" aria-label={`Notifications, ${unread} unread`}>
             <Bell className="size-5" />
             {unread > 0 && <span className="absolute top-1 right-1 grid size-4 place-items-center rounded-full bg-bad text-[10px] font-semibold text-white">{unread}</span>}
@@ -144,10 +152,6 @@ export function AppShell({ role, user, unread, children }: { role: Role; user: S
           </div>
         </div>
       </header>
-
-      <div className="border-b border-warn/20 bg-warn-50 px-4 py-1.5 text-center text-xs text-warn sm:px-6">
-        Preview build: everything except Reports uses the live database. Reports still show sample figures until Phase 6.
-      </div>
 
       <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:py-8">{children}</main>
     </div>

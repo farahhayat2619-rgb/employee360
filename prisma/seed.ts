@@ -10,7 +10,8 @@ import * as S from "../src/lib/sample-data";
 
 const db = new PrismaClient({ adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL! }) });
 
-export const DEMO_PASSWORD = "Employee360!";
+// Set SEED_PASSWORD (for example in Vercel) to give every demo account a private password instead.
+export const DEMO_PASSWORD = process.env.SEED_PASSWORD || "Employee360!";
 const day = (iso: string) => new Date(`${iso}T00:00:00Z`);
 const at = (iso: string, hhmm: string) => new Date(`${iso}T${hhmm}:00+05:00`); // Asia/Karachi
 
@@ -262,7 +263,7 @@ async function main() {
   }
 
   const count = await db.employee.count();
-  console.log(`Seeded ${count} employees across ${depts.length} departments. Demo password for every account: ${DEMO_PASSWORD}`);
+  console.log(`Seeded ${count} employees across ${depts.length} departments. ${process.env.SEED_PASSWORD ? "Every account uses the SEED_PASSWORD you set." : `Demo password for every account: ${DEMO_PASSWORD}`}`);
 }
 
 main()
