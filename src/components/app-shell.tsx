@@ -146,7 +146,7 @@ export function AppShell({ role, user, unread, children }: { role: Role; user: S
       </header>
 
       <div className="border-b border-warn/20 bg-warn-50 px-4 py-1.5 text-center text-xs text-warn sm:px-6">
-        Preview build: employees, departments, roles, attendance and leave use the live database. Payroll, goals, tasks, tickets and announcements still show sample data until their phase is built.
+        Preview build: everything except tickets, helpdesk, announcements, notifications and reports uses the live database. Those still show sample data until Phase 5 and 6.
       </div>
 
       <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:py-8">{children}</main>

@@ -2,7 +2,7 @@
 
 import clsx from "clsx";
 import { CheckCircle2, X } from "lucide-react";
-import { useEffect, useState, type ReactNode } from "react";
+import { startTransition, useEffect, useState, type FormEvent, type ReactNode } from "react";
 
 export function Tabs({ tabs, initial }: { tabs: { id: string; label: ReactNode; content: ReactNode }[]; initial?: string }) {
   const [active, setActive] = useState(initial ?? tabs[0]?.id);
@@ -67,4 +67,16 @@ export function useToast() {
     </div>
   ) : null;
   return { show: setMsg, toast };
+}
+
+/**
+ * Submits a form to a useActionState action without React's automatic form reset, so whatever the
+ * person typed stays in place when the server sends back a validation error.
+ */
+export function keepOnSubmit(action: (data: FormData) => void) {
+  return (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const data = new FormData(e.currentTarget);
+    startTransition(() => action(data));
+  };
 }

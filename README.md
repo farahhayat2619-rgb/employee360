@@ -12,8 +12,8 @@ Employee360 is an employee management and HRMS web app for a corporate or bankin
 | 1 | UI/UX design of every screen | Done |
 | 2 | Database, secure login, roles, protected pages, sample data | Done |
 | 3 | GPS Punch In / Out with office geofencing, leave | Done |
-| 4 | Profiles, payroll and PDF salary slips, goals, policies, tasks | Next |
-| 5 | Announcements, notifications, HR helpdesk, complaint tickets | Planned |
+| 4 | Profiles, payroll and PDF salary slips, goals, policies, tasks | Done |
+| 5 | Announcements, notifications, HR helpdesk, complaint tickets | Next |
 | 6 | Reports, polish, deploy | Planned |
 
 ## Screens
@@ -37,6 +37,14 @@ Employee360 is an employee management and HRMS web app for a corporate or bankin
 - Requests go to the employee's reporting manager (or department head). Managers see their department and direct reports; Admin / HR sees everyone. Nobody can approve their own leave.
 - Approving deducts the balance and marks the days as leave on the attendance calendar. Employees can withdraw a pending request or ask to cancel approved leave that hasn't started; allowing the cancellation gives the days back.
 - The employee gets a notification for each decision. HR sets yearly allowances and the holiday calendar.
+
+## Payroll, profiles, goals, policies and tasks
+
+- **Payroll:** HR previews the month from each person's salary structure, runs it (draft slips), checks the figures and publishes. Employees are notified and see only their own published slips. Slips download as a branded **PDF** generated on the server. Tax and provident fund use the demo's simplified flat rule, which is not tax advice.
+- **My Profile:** employees edit their own phone, address and emergency contact, and upload a photo (JPG, PNG or WebP up to 500 KB, checked by its contents). Employment details stay HR-only.
+- **Goals and reviews:** managers (for their department and direct reports) and HR assign monthly or annual goals and write reviews rated 1 to 5. Employees update their goal progress.
+- **Policies:** HR uploads PDFs (up to 5 MB, checked to be real PDFs) or new versions, and all staff are notified. Files are stored in the database, so no separate file storage is needed. Seeded policies are short sample documents.
+- **Tasks:** HR assigns tasks with a deadline and priority. Employees update progress with a note or mark them complete, and HR is notified.
 
 ## Security
 

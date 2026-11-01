@@ -6,19 +6,20 @@ import { Badge, Card, PageHeader, StatCard, StatusBadge } from "@/components/ui"
 import { myCalendar, myLast30Days, myPunchCard } from "@/lib/attendance";
 import { requirePortal } from "@/lib/auth";
 import { balancesFor, upcomingHolidays } from "@/lib/leave";
-import { announcements, formatDate, ticketCounts, tickets, tasks } from "@/lib/sample-data";
+import { myTasks } from "@/lib/records";
+import { announcements, formatDate, ticketCounts, tickets } from "@/lib/sample-data";
 import { localDate, localTime, monthLabel } from "@/lib/time";
 
 export default async function EmployeeDashboard() {
   const me = await requirePortal("employee");
   const now = new Date();
-  const [{ today, office }, last30, calendar, balances, holidays] = await Promise.all([myPunchCard(), myLast30Days(), myCalendar(), balancesFor(me.employeeId, Number(localDate(now).slice(0, 4))), upcomingHolidays()]);
+  const [{ today, office }, last30, calendar, balances, holidays, { tasks }] = await Promise.all([myPunchCard(), myLast30Days(), myCalendar(), balancesFor(me.employeeId, Number(localDate(now).slice(0, 4))), upcomingHolidays(), myTasks()]);
   const balance = balances.reduce((s, l) => s + l.allowed - l.used, 0);
   const hour = Number(localTime(now).slice(0, 2));
   const greeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
-  // Tasks and tickets move to the database in later phases; until then they show the sample employee's items
+  const openTasks = tasks.filter((t) => t.status !== "Completed");
+  // Tickets move to the database in Phase 5; until then the tile shows the sample employee's tickets
   const sampleId = "EMP-1024";
-  const myTasks = tasks.filter((t) => t.assignee === sampleId && t.status !== "Completed");
   const myTickets = ticketCounts(tickets.filter((t) => t.employeeId === sampleId));
   const firstName = me.name.split(" ")[0];
 
@@ -68,7 +69,8 @@ export default async function EmployeeDashboard() {
       <div className="mt-6 grid gap-6 lg:grid-cols-3">
         <Card title="Pending tasks" action={<Link href="/employee/tasks" className="text-xs font-medium text-accent-700 hover:underline">View all</Link>} className="lg:col-span-2" pad={false}>
           <ul className="divide-y divide-line">
-            {myTasks.map((t) => (
+            {openTasks.length === 0 && <li className="px-5 py-6 text-center text-sm text-ink-faint">No open tasks.</li>}
+            {openTasks.map((t) => (
               <li key={t.id} className="flex items-center justify-between gap-4 px-5 py-3">
                 <div className="min-w-0">
                   <p className="truncate text-sm font-medium text-navy-900">{t.title}</p>

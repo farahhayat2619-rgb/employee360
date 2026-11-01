@@ -1,15 +1,14 @@
 "use client";
 
+import { keepOnSubmit } from "./client-ui";
 import { Copy, KeyRound } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useActionState, useState } from "react";
 import { saveEmployee } from "@/app/actions/people";
 import type { ActionResult, EditableEmployee, Option } from "@/lib/types";
 import { buttonClass, Card, Field, inputClass } from "./ui";
 
 export function EmployeeForm({ existing, nextId, departments, offices, managers }: { existing: EditableEmployee | null; nextId: string; departments: Option[]; offices: Option[]; managers: Option[] }) {
-  const router = useRouter();
   const [state, action, pending] = useActionState<ActionResult, FormData>(saveEmployee, undefined);
   const [copied, setCopied] = useState(false);
 
@@ -39,9 +38,10 @@ export function EmployeeForm({ existing, nextId, departments, offices, managers 
               <Link href="/admin/employees" className={buttonClass("primary")}>
                 Back to employee records
               </Link>
-              <button type="button" className={buttonClass("outline")} onClick={() => router.refresh()}>
+              {/* A full page load gives a fresh, empty form */}
+              <a href="/admin/employees/new" className={buttonClass("outline")}>
                 Register another
-              </button>
+              </a>
             </div>
           </div>
         </div>
@@ -51,7 +51,7 @@ export function EmployeeForm({ existing, nextId, departments, offices, managers 
 
   const s = existing?.salary;
   return (
-    <form action={action} className="space-y-6">
+    <form onSubmit={keepOnSubmit(action)} className="space-y-6">
       {existing && <input type="hidden" name="id" value={existing.id} />}
       <Card title="Personal details">
         <div className="grid gap-4 md:grid-cols-2">
