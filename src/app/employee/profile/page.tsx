@@ -46,7 +46,7 @@ export default function ProfilePage() {
           </ul>
         </Card>
 
-        <div className="space-y-6 lg:col-span-2">
+        <div className="min-w-0 space-y-6 lg:col-span-2">
           <Card title="Employment information">
             <KeyValue
               items={[

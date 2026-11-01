@@ -44,7 +44,7 @@ export default function AttendancePage() {
         <Card title="Attendance calendar · October 2026">
           <MiniCalendar />
         </Card>
-        <div className="lg:col-span-2">
+        <div className="min-w-0 lg:col-span-2">
           <Tabs
             tabs={[
               { id: "daily", label: "Daily records", content: <Card pad={false}><DataTable rows={workdays} rowKey={(a) => a.date} columns={cols} /></Card> },

@@ -33,9 +33,13 @@ export function PunchCard() {
   const [now, setNow] = useState<Date | null>(null);
 
   useEffect(() => {
-    setNow(new Date());
-    const t = setInterval(() => setNow(new Date()), 30_000);
-    return () => clearInterval(t);
+    const tick = () => setNow(new Date());
+    const first = setTimeout(tick, 0);
+    const t = setInterval(tick, 30_000);
+    return () => {
+      clearTimeout(first);
+      clearInterval(t);
+    };
   }, []);
 
   function check(onInside: (office: string, distance: number, accuracy: number) => void) {
@@ -84,7 +88,7 @@ export function PunchCard() {
         </div>
         <span
           className={clsx(
-            "rounded-full px-2.5 py-1 text-xs font-medium",
+            "shrink-0 rounded-full px-2.5 py-1 text-xs font-medium whitespace-nowrap",
             punchedIn ? "bg-good/25 text-green-200" : state.kind === "out" ? "bg-white/10 text-navy-100" : "bg-warn/30 text-amber-100",
           )}
         >

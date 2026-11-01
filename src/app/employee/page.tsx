@@ -21,7 +21,7 @@ export default function EmployeeDashboard() {
       <PageHeader title={`Good morning, ${firstName}`} subtitle={`${me.id} · ${me.designation} · ${me.department}`} />
 
       <div className="grid gap-6 xl:grid-cols-3">
-        <div className="xl:col-span-2">
+        <div className="min-w-0 xl:col-span-2">
           <PunchCard />
         </div>
         <Card title="Leave balance" action={<Link href="/employee/leave" className="text-xs font-medium text-accent-700 hover:underline">Apply</Link>}>

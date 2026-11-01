@@ -4,7 +4,7 @@ import clsx from "clsx";
 import { Bell, ChevronDown, LogOut, Menu, Search, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState, type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { navByRole, roleLabels } from "@/lib/nav";
 import { currentUsers, employeeById, notifications, type Role } from "@/lib/sample-data";
 import { Avatar } from "./ui";
@@ -28,10 +28,13 @@ export function AppShell({ role, children }: { role: Role; children: ReactNode }
   const user = employeeById(currentUsers[role]);
   const unread = notifications.filter((n) => !n.read).length;
 
-  useEffect(() => {
+  // Close the mobile menu and user menu after navigation
+  const [lastPath, setLastPath] = useState(pathname);
+  if (pathname !== lastPath) {
+    setLastPath(pathname);
     setOpen(false);
     setMenu(false);
-  }, [pathname]);
+  }
 
   const isActive = (href: string) => {
     const base = `/${role}`;
