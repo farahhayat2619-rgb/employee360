@@ -1,4 +1,4 @@
-// Employee360 data model. Every record links back to an employee so dashboards and reports read live data.
+// Employee365 data model. Every record links back to an employee so dashboards and reports read live data.
 
 generator client {
   provider = "prisma-client"

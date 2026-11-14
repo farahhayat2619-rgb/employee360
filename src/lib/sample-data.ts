@@ -209,7 +209,7 @@ export const announcements: Announcement[] = [
   { id: "AN-88", title: "Open enrolment for 2027 medical cover", body: "Add or update dependants for next year's medical cover by 20 November. Changes after that date take effect in April.", type: "HR", date: "2026-10-30", author: "Sana Malik", audience: "All staff" },
   { id: "AN-87", title: "Iqbal Day holiday on 9 November", body: "All offices and branches will be closed on Monday 9 November for Iqbal Day.", type: "Holiday", date: "2026-10-28", author: "HR Department", audience: "All staff" },
   { id: "AN-86", title: "Crescent Bank wins Digital Banking Award", body: "Our mobile app was named Best Digital Experience at the Pakistan Banking Awards 2026. Thank you to everyone involved.", type: "Company news", date: "2026-10-24", author: "Corporate Communications", audience: "All staff" },
-  { id: "AN-85", title: "New attendance system goes live", body: "From 1 November, attendance is marked with Employee360 Punch In / Punch Out from inside the office. Allow location access on your phone.", type: "Important", date: "2026-10-20", author: "Sana Malik", audience: "All staff" },
+  { id: "AN-85", title: "New attendance system goes live", body: "From 1 November, attendance is marked with Employee365 Punch In / Punch Out from inside the office. Allow location access on your phone.", type: "Important", date: "2026-10-20", author: "Sana Malik", audience: "All staff" },
   { id: "AN-84", title: "Quarterly town hall", body: "Join the CEO's quarterly town hall on 12 November at 4 pm in the Head Office auditorium or online.", type: "Company news", date: "2026-10-18", author: "Corporate Communications", audience: "All staff" },
 ];
 

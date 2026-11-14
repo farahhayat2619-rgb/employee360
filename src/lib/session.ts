@@ -5,7 +5,7 @@ import { db } from "./db";
 
 // Database sessions: the browser holds a random token in an httpOnly cookie,
 // the database stores only its SHA-256 hash, so a leaked database row cannot be replayed.
-export const SESSION_COOKIE = "e360_session";
+export const SESSION_COOKIE = "e365_session";
 const IDLE_MINUTES = 30; // signed out after 30 minutes without activity
 const ABSOLUTE_HOURS = 12; // and always after 12 hours
 

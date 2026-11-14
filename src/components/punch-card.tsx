@@ -56,7 +56,7 @@ export function PunchCard({ today, office }: { today: TodayPunch; office: Office
       (err) =>
         setNotice({
           kind: "error",
-          message: err.code === err.PERMISSION_DENIED ? "Location access is blocked. Allow location for Employee360 in your browser settings, then try again." : "We couldn't read your location. Check that location is on and try again.",
+          message: err.code === err.PERMISSION_DENIED ? "Location access is blocked. Allow location for Employee365 in your browser settings, then try again." : "We couldn't read your location. Check that location is on and try again.",
         }),
       { enableHighAccuracy: true, timeout: 15_000, maximumAge: 0 },
     );

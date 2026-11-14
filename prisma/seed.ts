@@ -223,10 +223,10 @@ async function main() {
   // Policies with real (sample) PDF documents
   for (const p of S.policies) {
     const text = policyText[p.title] ?? { summary: `${p.title} for Crescent Bank staff.`, sections: [] };
-    const { bytes, pages } = await textDocumentPdf(p.title, `Crescent Bank · ${p.category} · ${p.version} · Sample document for the Employee360 demo`, [
+    const { bytes, pages } = await textDocumentPdf(p.title, `Crescent Bank · ${p.category} · ${p.version} · Sample document for the Employee365 demo`, [
       { heading: "Summary", body: text.summary },
       ...text.sections,
-      { heading: "About this document", body: "This is a short sample document created for the Employee360 demo. HR replaces it by uploading the bank's approved policy as a new version." },
+      { heading: "About this document", body: "This is a short sample document created for the Employee365 demo. HR replaces it by uploading the bank's approved policy as a new version." },
     ]);
     const fileName = `${p.title.replace(/[^\w]+/g, "-").replace(/-+$/, "")}-${p.version}.pdf`;
     await db.policy.create({ data: { title: p.title, category: p.category, version: p.version, summary: text.summary, pages, fileName, fileSize: bytes.length, fileData: Buffer.from(bytes), updatedBy: "sana.malik@crescentbank.example", updatedAt: day(p.updated) } });
@@ -308,7 +308,7 @@ const policyText: Record<string, { summary: string; sections: { heading: string;
     sections: [
       { heading: "1. Employment", body: "All roles are filled through fair, documented selection. New staff complete a three-month probation with a review at the end of each month." },
       { heading: "2. Performance", body: "Goals are agreed with your manager. Formal reviews happen twice a year, in July and January, with ratings from 1 to 5." },
-      { heading: "3. Pay and benefits", body: "Salaries are paid on the last working day of each month. Salary slips are published in Employee360." },
+      { heading: "3. Pay and benefits", body: "Salaries are paid on the last working day of each month. Salary slips are published in Employee365." },
     ],
   },
   "Attendance & Punctuality Policy": {
@@ -322,7 +322,7 @@ const policyText: Record<string, { summary: string; sections: { heading: string;
   "Leave Policy 2026": {
     summary: "Yearly allowances: 10 casual, 8 sick and 14 annual days. Weekends and public holidays are not counted as leave.",
     sections: [
-      { heading: "1. Applying", body: "Apply in Employee360 before the leave starts. Sick leave can be logged up to 7 days after the fact." },
+      { heading: "1. Applying", body: "Apply in Employee365 before the leave starts. Sick leave can be logged up to 7 days after the fact." },
       { heading: "2. Approval", body: "Your reporting manager or department head approves leave. You are notified as soon as a decision is made." },
       { heading: "3. Cancellation", body: "You can withdraw a pending request, or ask to cancel approved leave that has not started. Cancelled days return to your balance." },
     ],
@@ -337,8 +337,8 @@ const policyText: Record<string, { summary: string; sections: { heading: string;
   "Employee Handbook": {
     summary: "A practical guide for new and current staff: your first week, tools, benefits, and who to contact for what.",
     sections: [
-      { heading: "Your first week", body: "Collect your ID card, sign in to Employee360, read the policies here and meet your manager to agree first goals." },
-      { heading: "Getting help", body: "Use the HR Helpdesk in Employee360 for HR questions and Complaint Tickets for issues that need a department to act." },
+      { heading: "Your first week", body: "Collect your ID card, sign in to Employee365, read the policies here and meet your manager to agree first goals." },
+      { heading: "Getting help", body: "Use the HR Helpdesk in Employee365 for HR questions and Complaint Tickets for issues that need a department to act." },
     ],
   },
   "Anti-Harassment Policy": {

@@ -1,7 +1,7 @@
-# employee360
+# Employee365
 Smart Employee Management System - SaaS project
 
-Employee360 is an employee management and HRMS web app for a corporate or banking organization (demo company: the fictional Crescent Bank). It has three portals behind one login: **Employee**, **Management** and **Admin / HR**.
+Employee365 is an employee management and HRMS web app for a corporate or banking organization (demo company: the fictional Crescent Bank). It has three portals behind one login: **Employee**, **Management** and **Admin / HR**.
 
 ## Status
 

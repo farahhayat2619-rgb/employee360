@@ -5,7 +5,7 @@ import "./globals.css";
 const inter = Inter({ variable: "--font-inter", subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Employee360",
+  title: "Employee365",
   description: "Employee management and HRMS for Crescent Bank",
 };
 
