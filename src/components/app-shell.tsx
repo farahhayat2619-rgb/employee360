@@ -16,7 +16,7 @@ function Logo() {
     <div className="flex items-center gap-2.5">
       <span className="grid size-9 place-items-center rounded-lg bg-accent-600 text-sm font-bold text-white">E</span>
       <div className="leading-tight">
-        <p className="text-[15px] font-semibold text-white">Employee360</p>
+        <p className="text-[15px] font-semibold text-white">Employee365</p>
         <p className="text-[11px] text-navy-100/70">Crescent Bank</p>
       </div>
     </div>

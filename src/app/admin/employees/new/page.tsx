@@ -13,7 +13,7 @@ export default async function Page(props: PageProps<"/admin/employees/new">) {
     <>
       <PageHeader
         title={existing ? `Edit ${existing.name}` : "Register Employee"}
-        subtitle={existing ? `${existing.id} · every change is recorded in the audit log.` : "Creates the employee record and their Employee360 login with a one-time password."}
+        subtitle={existing ? `${existing.id} · every change is recorded in the audit log.` : "Creates the employee record and their Employee365 login with a one-time password."}
       />
       <EmployeeForm key={existing?.id ?? "new"} existing={existing} nextId={nextId} {...options} />
     </>

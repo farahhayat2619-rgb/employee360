@@ -1,6 +1,6 @@
 @import "tailwindcss";
 
-/* Employee360 design tokens: navy primary, white surfaces, light grey canvas, professional blue accent */
+/* Employee365 design tokens: navy primary, white surfaces, light grey canvas, professional blue accent */
 @theme {
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
 

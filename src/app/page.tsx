@@ -8,7 +8,7 @@ export default function LoginPage() {
         <div className="flex items-center gap-2.5">
           <span className="grid size-10 place-items-center rounded-lg bg-accent-600 font-bold">E</span>
           <div>
-            <p className="font-semibold">Employee360</p>
+            <p className="font-semibold">Employee365</p>
             <p className="text-xs text-navy-100/70">Crescent Bank</p>
           </div>
         </div>

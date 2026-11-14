@@ -48,7 +48,7 @@ export async function payslipPdf(d: PayslipPdfData) {
   const doc = await PDFDocument.create();
   doc.setTitle(`Salary slip ${d.month} - ${d.employee.name}`);
   doc.setAuthor(d.company);
-  doc.setCreator("Employee360");
+  doc.setCreator("Employee365");
   const page = doc.addPage(A4);
   const [W, H] = A4;
   const reg = await doc.embedFont(StandardFonts.Helvetica);
@@ -109,7 +109,7 @@ export async function payslipPdf(d: PayslipPdfData) {
 
   // Footer
   const foot = wrap(
-    "This is a computer-generated salary slip from Employee360 and does not need a signature. Figures use the demo company's simplified rule (flat income tax and provident fund percentages) and are not tax advice.",
+    "This is a computer-generated salary slip from Employee365 and does not need a signature. Figures use the demo company's simplified rule (flat income tax and provident fund percentages) and are not tax advice.",
     reg,
     8.5,
     W - 2 * M,
@@ -123,7 +123,7 @@ export async function payslipPdf(d: PayslipPdfData) {
 export async function textDocumentPdf(title: string, subtitle: string, sections: { heading: string; body: string }[]) {
   const doc = await PDFDocument.create();
   doc.setTitle(title);
-  doc.setCreator("Employee360");
+  doc.setCreator("Employee365");
   const reg = await doc.embedFont(StandardFonts.Helvetica);
   const bold = await doc.embedFont(StandardFonts.HelveticaBold);
   const [W, H] = A4;
